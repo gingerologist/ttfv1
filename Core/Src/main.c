@@ -534,9 +534,20 @@ void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
+  // GPIO_PinState ps = GPIO_PIN_SET;
+
+  const uint8_t hello[] = "hello\r\n";
+
   for(;;)
   {
-    osDelay(1);
+    // osDelay(1);
+	// HAL_GPIO_WritePin();
+	HAL_GPIO_TogglePin(ledc_GPIO_Port, ledc_Pin);
+
+	// HAL_GPIO_WritePin(ledc_GPIO_Port, ledc_Pin, ps);
+
+	HAL_UART_Transmit(&huart2, hello, 7, HAL_MAX_DELAY);
+    vTaskDelay(1000);
   }
   /* USER CODE END 5 */
 }
