@@ -59,9 +59,11 @@ static void CLI_CMD_List(EmbeddedCli *cli, char *args, void *context)
 }
 
 CliCommandBinding cli_cmd_list_binding =
-{ "list", "Print profile 1 to 9",
-false,
-NULL, CLI_CMD_List };
+{ "list",
+  "Print profile 1 to 9",
+  false,
+  NULL,
+  CLI_CMD_List };
 
 static bool cfg_str_is_valid(const char *str)
 {
@@ -199,12 +201,14 @@ static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context)
 }
 
 CliCommandBinding cli_cmd_define_binding =
-{ "define", "Define a profile. Example:\r\n"
-    "        > define 9a 222222222 111111111 222222222 111111111 3\r\n"
-    "        > define 9b 111111111 222222222 111111111 222222222 3\r\n"
-    "        > see more detail in manual.",
-true,
-NULL, CLI_CMD_Define };
+{ "define",
+  "Define a profile. Example:\r\n"
+  "        > define 9a 222222222 111111111 222222222 111111111 3\r\n"
+  "        > define 9b 111111111 222222222 111111111 222222222 3\r\n"
+  "        > see more detail in manual.",
+  true,
+  NULL,
+  CLI_CMD_Define };
 
 static void CLI_CMD_Blink(EmbeddedCli *cli, char *args, void *context)
 {
@@ -212,9 +216,11 @@ static void CLI_CMD_Blink(EmbeddedCli *cli, char *args, void *context)
 }
 
 CliCommandBinding cli_cmd_blink_binding =
-{ "blink", "Blink all leds (for test purpose only).",
-false,
-NULL, CLI_CMD_Blink };
+{ "blink",
+  "Blink all leds (for test purpose only).",
+  false,
+  NULL,
+  CLI_CMD_Blink };
 
 static void CLI_CMD_Reboot(EmbeddedCli *cli, char *args, void *context)
 {
@@ -222,9 +228,11 @@ static void CLI_CMD_Reboot(EmbeddedCli *cli, char *args, void *context)
 }
 
 CliCommandBinding cli_cmd_reboot_binding =
-{ "reboot", "Reboot the processor (for test purpose only).",
-false,
-NULL, CLI_CMD_Reboot };
+{ "reboot",
+  "Reboot the processor (for test purpose only).",
+  false,
+  NULL,
+  CLI_CMD_Reboot };
 
 void StartUxTask(void const *argument)
 {
