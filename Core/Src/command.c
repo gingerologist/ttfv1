@@ -247,7 +247,6 @@ void StartUxTask(void const *argument)
   /* Infinite loop */
   for (;;)
   {
-#if 0
     uint8_t c;
     HAL_StatusTypeDef status = HAL_UART_Receive(&huart2, &c, 1, 10);
     if (status == HAL_OK)
@@ -256,6 +255,7 @@ void StartUxTask(void const *argument)
       embeddedCliProcess(cli);
     }
 
+#if 0
     int key = detect_single_keydown();
     if (key >= 0)
     {

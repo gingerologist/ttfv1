@@ -296,7 +296,7 @@ void StartProfileTask(void const * argument)
   vTaskDelay(100);
   for (;;)
   {
-    print_line("hello");
+    // print_line("hello");
     vTaskDelay(1000);
   }
 }
