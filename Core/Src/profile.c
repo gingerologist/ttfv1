@@ -450,13 +450,112 @@ profile_blink:
 // For storing 768 bytes of data in the last sector
 #define DATA_STORAGE_ADDR       (LAST_SECTOR_ADDR)
 
-#if 0
-
 static void delay(void)
 {
 	vTaskDelay(50);
 }
 
+static HAL_StatusTypeDef erase_last_sector(void)
+{
+  FLASH_EraseInitTypeDef EraseInitStruct;
+  uint32_t SectorError = 0;
+  HAL_StatusTypeDef status;
+
+  /* Fill EraseInit structure */
+  EraseInitStruct.TypeErase = FLASH_TYPEERASE_SECTORS;
+  EraseInitStruct.VoltageRange = FLASH_VOLTAGE_RANGE_3; // Voltage range 2.7V to 3.6V
+  EraseInitStruct.Sector = FLASH_LAST_SECTOR;     // Sector 11
+  EraseInitStruct.NbSectors = 1;
+
+  status = HAL_FLASHEx_Erase(&EraseInitStruct, &SectorError);
+
+  /* Lock the Flash to disable the flash control register access */
+  HAL_FLASH_Lock();
+
+  return status;
+}
+
+/*
+ * write 16 profile_v2_t to flash.
+ */
+static HAL_StatusTypeDef save_profiles_v2(void)
+{
+  HAL_StatusTypeDef status;
+  uint64_t *dword = (uint64_t*) profile_v2;
+  int count = sizeof(profile_v2_t) * 16 / 8;
+
+  // calculate crc
+  uint32_t crc = HAL_CRC_Calculate(&hcrc, (uint32_t*) profile_v2,
+      sizeof(profile_v2_t) * 16 / 4);
+
+  /* Unlock the Flash to enable the flash control register access */
+  HAL_FLASH_Unlock();
+
+  status = erase_last_sector();
+  if (status != HAL_OK)
+  {
+    HAL_FLASH_Lock();
+    return status;
+  }
+
+  delay();
+
+  // write profile
+  for (int i = 0; i < count; i++)
+  {
+    status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD,
+        (LAST_SECTOR_ADDR + i * sizeof(uint64_t)), dword[i]);
+
+    if (status != HAL_OK)
+    {
+      HAL_FLASH_Lock();
+      return status;
+    }
+
+    delay();
+  }
+
+  // write crc
+  status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD,
+      (LAST_SECTOR_ADDR + count * sizeof(uint64_t)), crc);
+
+  HAL_FLASH_Lock();
+  delay();
+
+  return status;
+}
+
+static void load_profiles_v2(void)
+{
+  static profile_v2_t _profile[16];
+
+  for (int i = 0; i < 16; i++)
+  {
+    for (int j = 0; j < 12; j++)
+    {
+      _profile[i].word[j] = *((__IO uint32_t *)(LAST_SECTOR_ADDR + i * 48 + j * 4));
+    }
+  }
+
+  uint32_t stored_crc  = *(__IO uint32_t *)(LAST_SECTOR_ADDR + 16 * 48);
+  uint32_t calculated_crc  = HAL_CRC_Calculate(&hcrc, (uint32_t *)_profile, sizeof(profile_v2_t) * 16 / 4);
+
+  if (stored_crc != calculated_crc)
+  {
+    print_line("error: bad crc when loading profiles.");
+  }
+  else
+  {
+    for (int i = 0; i < 16; i++)
+    {
+      profile_v2[i] = _profile[i];
+    }
+
+    print_line("profiles loaded.");
+  }
+}
+
+#if 0
 static HAL_StatusTypeDef save_profiles(void)
 {
 	FLASH_EraseInitTypeDef EraseInitStruct;
@@ -465,7 +564,7 @@ static HAL_StatusTypeDef save_profiles(void)
 	uint32_t calc = HAL_CRC_Calculate(&hcrc, (uint32_t *)profile, 90);
 
 	// unlock flash
-    HAL_FLASH_Unlock();
+  HAL_FLASH_Unlock();
 
     // erase page
 	EraseInitStruct.TypeErase = FLASH_TYPEERASE_PAGES;

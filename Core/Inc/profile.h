@@ -52,12 +52,17 @@ typedef struct
 _Static_assert(sizeof(pgcfg_v2_t) == 18, "pad_star_t size not 2");
 
 // in profile_v2_t
-typedef struct __attribute__((packed)) {
-  pgcfg_v2_t pgcfg_a;
-  pgcfg_v2_t pgcfg_b;
-  uint32_t duration_a_sec;
-  uint32_t duration_b_sec;
-  uint32_t level;
+typedef union __attribute__((packed))
+{
+  uint32_t word[12];
+  struct __attribute__((packed))
+  {
+    pgcfg_v2_t pgcfg_a;
+    pgcfg_v2_t pgcfg_b;
+    uint32_t duration_a_sec;
+    uint32_t duration_b_sec;
+    uint32_t level;
+  };
 } profile_v2_t;
 
 _Static_assert(sizeof(profile_v2_t) == 48, "profile_t size not 40");
