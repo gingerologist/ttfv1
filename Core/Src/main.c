@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -56,7 +57,8 @@ SPI_HandleTypeDef hspi2;
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_rx;
 
-osThreadId defaultTaskHandle;
+osThreadId profileTaskHandle;
+osThreadId uxTaskHandle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -70,7 +72,8 @@ static void MX_SPI1_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_CRC_Init(void);
 static void MX_SPI2_Init(void);
-void StartDefaultTask(void const * argument);
+void StartProfileTask(void const * argument);
+void StartUxTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -89,6 +92,24 @@ void uart_printf(UART_HandleTypeDef *huart, const char *fmt, ...)
   va_end(args);
 
   HAL_UART_Transmit(huart, (uint8_t*)buf, len, HAL_MAX_DELAY);
+}
+
+// TODO remove this function
+static void UART2_write(const char * str)
+{
+  int len = strlen(str);
+  if (len == 0)
+  {
+    return;
+  }
+
+  HAL_UART_Transmit(&huart2, (const uint8_t *)str, len, HAL_MAX_DELAY);
+}
+
+void print_line(const char *str)
+{
+  UART2_write(str);
+  UART2_write("\r\n");
 }
 /* USER CODE END 0 */
 
@@ -148,9 +169,13 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
-  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+  /* definition and creation of profileTask */
+  osThreadDef(profileTask, StartProfileTask, osPriorityAboveNormal, 0, 1024);
+  profileTaskHandle = osThreadCreate(osThread(profileTask), NULL);
+
+  /* definition and creation of uxTask */
+  osThreadDef(uxTask, StartUxTask, osPriorityNormal, 0, 1024);
+  uxTaskHandle = osThreadCreate(osThread(uxTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -612,85 +637,101 @@ void print_tca9555(void)
 }
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartDefaultTask */
+/* USER CODE BEGIN Header_StartProfileTask */
 /**
-  * @brief  Function implementing the defaultTask thread.
+  * @brief  Function implementing the profileTask thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void const * argument)
+/* USER CODE END Header_StartProfileTask */
+__weak void StartProfileTask(void const * argument)
 {
-  // uint8_t regval = 0;
-
   /* USER CODE BEGIN 5 */
-  /* Infinite loop */
-  // GPIO_PinState ps = GPIO_PIN_SET;
-  // const uint8_t digipot = 192;
-  // const uint8_t hello[] = "hello\r\n";
-  // HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-
-  uart_printf(&huart2, "\r\n--- ttf boot ---\r\n");
-  // AD9834_ConfigMCLK();
-  // AD9834_Setup200kHzSineWave();
-  // +AD9834_ConfigMCLK();
-  TestAD9834();
-
-  print_tca9555();
-  TCA9555_Init_All();
-  print_tca9555();
-
-  // set P36 - P40 C (com), and P41-P45 S (signal)
-  // chip 4 P0, chip 5 P0 and P1 involved
-  // chip 4 P0 -> 00010101 (P36-38C)
-  // chip 5 P1 -> 10100101 (P39-40C, P41-42S)
-  // chip 5 P0 -> 10101000 (P43-45S, two lsbs irrelevent)
-  // TCA9555_WriteReg(4, TCA9555_REG_OUTPUT_PORT0, 0b00010111);
-
-  TCA9555_WriteReg(4, TCA9555_REG_OUTPUT_PORT0, 0b00010101);
-  TCA9555_WriteReg(5, TCA9555_REG_OUTPUT_PORT1, 0b10100101);
-  TCA9555_WriteReg(5, TCA9555_REG_OUTPUT_PORT0, 0b10101000);
-
-
-  for(int i = 0;;i++)
-  {
-
-    // HAL_GPIO_WritePin();
-    // HAL_GPIO_TogglePin(ledc_GPIO_Port, ledc_Pin);
-
-    // HAL_GPIO_WritePin(ledc_GPIO_Port, ledc_Pin, ps);
-
-    // HAL_UART_Transmit(&huart2, hello, 7, HAL_MAX_DELAY);
-    // HAL_SPI_Transmit(&hspi1, &digipot, 1, HAL_MAX_DELAY);
-
-
-    uart_printf(&huart2, "## %d\r\n", i);
-
-//    for (int j = 0; j < 6; j++)
-//    {
-//      TCA9555_WriteReg(j, TCA9555_REG_OUTPUT_PORT0, 0x00);
-//      TCA9555_WriteReg(j, TCA9555_REG_OUTPUT_PORT1, 0x00);
-//    }
-
-//    TCA9555_WriteReg(5, TCA9555_REG_OUTPUT_PORT0, 0x00);
-//    if (i % 2 == 0)
-//    {
-//      regval = 1 << 2;
-//    }
-//    else
-//    {
-//      regval = 1 << 3;
-//    }
+//  /* Infinite loop */
+//  // GPIO_PinState ps = GPIO_PIN_SET;
+//  // const uint8_t digipot = 192;
+//  // const uint8_t hello[] = "hello\r\n";
+//  // HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 //
-//    TCA9555_WriteReg(5, TCA9555_REG_OUTPUT_PORT0, regval);
-
-
-
-
-    // os neutral version of vTaskDelay(1000);
-    osDelay(5000);
-  }
+//  uart_printf(&huart2, "\r\n--- ttf boot ---\r\n");
+//  // AD9834_ConfigMCLK();
+//  // AD9834_Setup200kHzSineWave();
+//  // +AD9834_ConfigMCLK();
+//  TestAD9834();
+//
+//  print_tca9555();
+//  TCA9555_Init_All();
+//  print_tca9555();
+//
+//  // set P36 - P40 C (com), and P41-P45 S (signal)
+//  // chip 4 P0, chip 5 P0 and P1 involved
+//  // chip 4 P0 -> 00010101 (P36-38C)
+//  // chip 5 P1 -> 10100101 (P39-40C, P41-42S)
+//  // chip 5 P0 -> 10101000 (P43-45S, two lsbs irrelevent)
+//  // TCA9555_WriteReg(4, TCA9555_REG_OUTPUT_PORT0, 0b00010111);
+//
+//  TCA9555_WriteReg(4, TCA9555_REG_OUTPUT_PORT0, 0b00010101);
+//  TCA9555_WriteReg(5, TCA9555_REG_OUTPUT_PORT1, 0b10100101);
+//  TCA9555_WriteReg(5, TCA9555_REG_OUTPUT_PORT0, 0b10101000);
+//
+//
+//  for(int i = 0;;i++)
+//  {
+//
+//    // HAL_GPIO_WritePin();
+//    // HAL_GPIO_TogglePin(ledc_GPIO_Port, ledc_Pin);
+//
+//    // HAL_GPIO_WritePin(ledc_GPIO_Port, ledc_Pin, ps);
+//
+//    // HAL_UART_Transmit(&huart2, hello, 7, HAL_MAX_DELAY);
+//    // HAL_SPI_Transmit(&hspi1, &digipot, 1, HAL_MAX_DELAY);
+//
+//
+//    uart_printf(&huart2, "## %d\r\n", i);
+//
+////    for (int j = 0; j < 6; j++)
+////    {
+////      TCA9555_WriteReg(j, TCA9555_REG_OUTPUT_PORT0, 0x00);
+////      TCA9555_WriteReg(j, TCA9555_REG_OUTPUT_PORT1, 0x00);
+////    }
+//
+////    TCA9555_WriteReg(5, TCA9555_REG_OUTPUT_PORT0, 0x00);
+////    if (i % 2 == 0)
+////    {
+////      regval = 1 << 2;
+////    }
+////    else
+////    {
+////      regval = 1 << 3;
+////    }
+////
+////    TCA9555_WriteReg(5, TCA9555_REG_OUTPUT_PORT0, regval);
+//
+//
+//
+//
+//    // os neutral version of vTaskDelay(1000);
+//    osDelay(5000);
+//  }
   /* USER CODE END 5 */
+}
+
+/* USER CODE BEGIN Header_StartUxTask */
+/**
+* @brief Function implementing the uxTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartUxTask */
+__weak void StartUxTask(void const * argument)
+{
+  /* USER CODE BEGIN StartUxTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartUxTask */
 }
 
 /**

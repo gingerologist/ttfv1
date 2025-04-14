@@ -123,10 +123,12 @@ static void print_pad_group_config(uint32_t pg_cfg, pgcfg_strbuf_t* buf)
 
 	buf->buf[9] = '\0';
 }
+#endif
 
 /* Public user code ---------------------------------------------------------*/
 void print_profile(int i)
 {
+#if 0
 	static pgcfg_strbuf_t buf[4];
 
 	for (int j = 0; j < 4; j++)
@@ -161,8 +163,10 @@ void print_profile(int i)
 	print_line(long_buf);
 
 	print_line(NULL);
+#endif
 }
 
+#if 0
 profile_t get_profile(int index)
 {
 	if (index > -1 && index < 9)
@@ -173,6 +177,7 @@ profile_t get_profile(int index)
 	profile_t profile = {0};
 	return profile;
 }
+#endif
 
 void set_profile(int index,
 				uint32_t pgcfg_a[4],
@@ -180,6 +185,7 @@ void set_profile(int index,
 				uint32_t pgcfg_b[4],
 				uint32_t *duration_b_sec)
 {
+#if 0
 	if (pgcfg_a != NULL)
 	{
 		profile[index].pgcfg_a[0] = pgcfg_a[0];
@@ -207,7 +213,10 @@ void set_profile(int index,
 	}
 
 	save_profiles();
+#endif
 }
+
+#if 0
 
 GPIO_PinState pin_state(uint32_t cfg, int bitpos)
 {
@@ -274,13 +283,25 @@ void do_profile_by_key(int key)
 		}
 	}
 }
+#endif
+
 
 void do_profile_blink()
 {
-	xQueueSend(requestQueueHandle, &profile[10], 0);
+	// xQueueSend(requestQueueHandle, &profile[10], 0);
 }
 
+void StartProfileTask(void const * argument)
+{
+  vTaskDelay(100);
+  for (;;)
+  {
+    print_line("hello");
+    vTaskDelay(1000);
+  }
+}
 
+#if 0
 void StartProfileTask(void const * argument)
 {
 	vTaskDelay(100);
