@@ -31,7 +31,8 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
+#include <stdarg.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -49,8 +50,6 @@ extern "C" {
 
 /* USER CODE END EM */
 
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
@@ -59,18 +58,18 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define sw1_Pin GPIO_PIN_0
-#define sw1_GPIO_Port GPIOC
-#define sw2_Pin GPIO_PIN_1
-#define sw2_GPIO_Port GPIOC
-#define sw3_Pin GPIO_PIN_2
-#define sw3_GPIO_Port GPIOC
-#define sw4_Pin GPIO_PIN_3
-#define sw4_GPIO_Port GPIOC
-#define ledc_Pin GPIO_PIN_11
-#define ledc_GPIO_Port GPIOA
-#define sw5_Pin GPIO_PIN_12
-#define sw5_GPIO_Port GPIOA
+#define SW1_Pin GPIO_PIN_0
+#define SW1_GPIO_Port GPIOC
+#define SW2_Pin GPIO_PIN_1
+#define SW2_GPIO_Port GPIOC
+#define SW3_Pin GPIO_PIN_2
+#define SW3_GPIO_Port GPIOC
+#define SW4_Pin GPIO_PIN_3
+#define SW4_GPIO_Port GPIOC
+#define LEDC_Pin GPIO_PIN_11
+#define LEDC_GPIO_Port GPIOA
+#define SW5_Pin GPIO_PIN_12
+#define SW5_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 
