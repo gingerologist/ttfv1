@@ -63,6 +63,8 @@ typedef struct __attribute__((packed)) {
 _Static_assert(sizeof(profile_v2_t) == 48, "profile_t size not 40");
 
 void print_profile(int index);
+void print_profile_v2(void);
+
 void do_profile_by_key(int profile_index);
 void do_profile_blink(void);
 profile_t get_profile(int index);

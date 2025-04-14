@@ -64,6 +64,7 @@ static const uint16_t c_pin[4][9] =
 	{ C1C_Pin, C2C_Pin, C3C_Pin, C4C_Pin, C5C_Pin, C6C_Pin, C7C_Pin, C8C_Pin, C9C_Pin },
 	{ D1C_Pin, D2C_Pin, D3C_Pin, D4C_Pin, D5C_Pin, D6C_Pin, D7C_Pin, D8C_Pin, D9C_Pin },
 };
+#endif
 
 static char long_buf[256] = {0};
 
@@ -87,7 +88,32 @@ static profile_t profile[13] = {
 		},
 		{}, {}};	// profile[11], profile[12]
 
+static profile_v2_t profile_v2[19] =
+{
+  { },  // 0
+  { },  // 1
+  { },  // 2
+  { },  // 3
+  { },  // 4
+  { },  // 5
+  { },  // 6
+  { },  // 7
+  { },  // 8
+  { },  // 9
+  { },  // 10
+  { },  // 11
+  { },  // 12
+  { },  // 13
+  { },  // 14
+  { },  // 15
+  { },  // 16, all zero (used for stop?)
+  { },  // 17, current
+  { },  // 18, next
+};
+
 extern CRC_HandleTypeDef hcrc;
+
+#if 0
 
 /* Private function prototypes -----------------------------------------------*/
 static void print_pad_group_config(uint32_t pg_cfg, pgcfg_strbuf_t *buf);
@@ -390,7 +416,9 @@ profile_blink:
 	NEXT_PROFILE = STOP_PROFILE;
 	goto entry_point;
 }
+#endif
 
+#if 0
 // page size 2KB, table 29 flash memory characteristics, in datasheet (stm32f103ze.pdf)
 // stm32f103zEt6 where E stands for 512Kbytes of Flash memory
 // flash start 	0x08000000
@@ -398,10 +426,31 @@ profile_blink:
 // page        	0x00000800
 // lastpg start	0x0807f800
 
-// FLASH_PAGE_SIZE				0x0800			// 2KB, already defined in stm32f1xx_hal_flash_ex.h
-#define FLASH_SIZE				0x080000		// 512KB
+// FLASH_PAGE_SIZE				  0x0800			// 2KB, already defined in stm32f1xx_hal_flash_ex.h
+#define FLASH_SIZE				  0x080000		// 512KB
 #define FLASH_ADDR_BASE			0x08000000
 #define LAST_PAGE_ADDR 			(FLASH_ADDR_BASE + FLASH_SIZE - FLASH_PAGE_SIZE)
+#endif
+
+// STM32F405 Flash memory is organized in sectors of varying sizes
+// STM32F405 has 1MB Flash (0x100000 bytes)
+// Flash starts at 0x08000000
+// Sector sizes:
+// Sectors 0-3: 16KB each
+// Sectors 4: 64KB
+// Sectors 5-11: 128KB each
+// Total 1MB (0x100000 bytes)
+
+#define FLASH_SIZE              0x00100000  // 1MB
+#define FLASH_ADDR_BASE         0x08000000
+#define FLASH_LAST_SECTOR       11
+#define FLASH_SECTOR_11_SIZE    0x00020000  // 128KB
+#define LAST_SECTOR_ADDR        (FLASH_ADDR_BASE + FLASH_SIZE - FLASH_SECTOR_11_SIZE)
+
+// For storing 768 bytes of data in the last sector
+#define DATA_STORAGE_ADDR       (LAST_SECTOR_ADDR)
+
+#if 0
 
 static void delay(void)
 {
