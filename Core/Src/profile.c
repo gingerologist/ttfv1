@@ -14,6 +14,8 @@
 #include "main.h"
 #include "profile.h"
 
+#if 0
+
 extern osMessageQId requestQueueHandle;
 
 /* Private includes ----------------------------------------------------------*/
@@ -460,3 +462,6 @@ static void load_profiles(void)
 		print_line("profiles loaded.");
 	}
 }
+
+#endif
+
