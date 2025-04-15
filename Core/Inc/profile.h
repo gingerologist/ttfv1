@@ -48,28 +48,29 @@ typedef union
     unsigned int a_lft:2;
     unsigned int a_top:2;
   };
-} rowcfg_t;
+} rowpads_t;
 
-_Static_assert(sizeof(rowcfg_t) == 4, "rowcfg_t size not 4");
+_Static_assert(sizeof(rowpads_t) == 4, "rowpads_t size not 4");
 
 // three rows of pads in total
 typedef struct
 {
-  rowcfg_t row[3];
-} padscfg_t;
+  rowpads_t row[3];
+} allpads_t;
 
-_Static_assert(sizeof(padscfg_t) == 12, "padscfg_t size not 12");
+_Static_assert(sizeof(allpads_t) == 12, "allpads_t size not 12");
 
 // single phase contains configuration of all pads, duration and voltage level
 typedef struct
 {
-  padscfg_t pads;
+  allpads_t pads;
   int duration;      // max 3600
   int level;         // max 100
 } phase_t;
 
 _Static_assert(sizeof(phase_t) == 20, "phase_t size not 20");
 
+// each profile contains two phases.
 typedef union __attribute__((packed))
 {
   uint32_t word[sizeof(phase_t) * 2 / sizeof(uint32_t)];
@@ -78,9 +79,9 @@ typedef union __attribute__((packed))
     phase_t a;
     phase_t b;
   };
-} profile_v2_t;
+} profile_t;
 
-_Static_assert(sizeof(profile_v2_t) == 40, "profile_t size not 40");
+_Static_assert(sizeof(profile_t) == 40, "profile_t size not 40");
 
 void print_profile(int index);
 void print_profile_v2(int index);
@@ -89,7 +90,7 @@ void do_profile_by_key(int profile_index);
 void do_profile_blink(void);
 // profile_t get_profile(int index);
 
-void set_profile_phase(int profile_index, int profile_phase, phase_t * phase);
+void set_profile_phase(int profile_index, int phase_index, phase_t * phase);
 
 
 #endif /* INC_PROFILE_H_ */

@@ -31,7 +31,7 @@
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
-static char long_buf[256];
+// static char long_buf[256];
 
 EmbeddedCliConfig *cli_config = NULL;
 EmbeddedCli *cli = NULL;
@@ -64,21 +64,6 @@ CliCommandBinding cli_cmd_list_binding =
   false,
   NULL,
   CLI_CMD_List };
-
-static bool cfg_str_is_valid(const char *str)
-{
-  if (strlen(str) != 5)
-    return false;
-  for (int i = 0; i < 5; i++)
-  {
-    char c = str[i];
-    if (c != '0' && c != '1' && c != '2')
-    {
-      return false;
-    }
-  }
-  return true;
-}
 
 #if 0
 static bool parse_config(const char *str, uint32_t *config)
@@ -163,7 +148,7 @@ static bool parse_phase_index(const char *str, int *phase)
 /*
  * 11111,11111,11111;22222,22222,22222;00000,00000,00000
  */
-static bool parse_phase_padscfg(const char *str, padscfg_t* padscfg)
+static bool parse_phase_padscfg(const char *str, allpads_t* padscfg)
 {
   size_t len = strlen(str);
   if (len != 53)
@@ -308,106 +293,6 @@ static bool parse_phase_level(const char *p, int *level)
   return true;
 }
 
-
-static bool parse_config_v2(const char *str, rowcfg_t *row)
-{
-  if (!cfg_str_is_valid(str))
-  {
-    return false;
-  }
-
-  if (row != NULL)
-  {
-    row->word = 0;
-
-    row->a_top = str[0] == '2' ? 2 : str[0] == '1' ? 1 : 0;
-    row->a_lft = str[1] == '2' ? 2 : str[1] == '1' ? 1 : 0;
-    row->a_mid = str[2] == '2' ? 2 : str[2] == '1' ? 1 : 0;
-    row->a_rgt = str[3] == '2' ? 2 : str[3] == '1' ? 1 : 0;
-    row->a_bot = str[4] == '2' ? 2 : str[4] == '1' ? 1 : 0;
-
-    row->b_top = str[6] == '2' ? 2 : str[0] == '1' ? 1 : 0;
-    row->b_lft = str[7] == '2' ? 2 : str[1] == '1' ? 1 : 0;
-    row->b_mid = str[8] == '2' ? 2 : str[2] == '1' ? 1 : 0;
-    row->b_rgt = str[9] == '2' ? 2 : str[3] == '1' ? 1 : 0;
-    row->b_bot = str[10] == '2' ? 2 : str[4] == '1' ? 1 : 0;
-
-    row->c_top = str[12] == '2' ? 2 : str[0] == '1' ? 1 : 0;
-    row->c_lft = str[13] == '2' ? 2 : str[1] == '1' ? 1 : 0;
-    row->c_mid = str[14] == '2' ? 2 : str[2] == '1' ? 1 : 0;
-    row->c_rgt = str[15] == '2' ? 2 : str[3] == '1' ? 1 : 0;
-    row->c_bot = str[16] == '2' ? 2 : str[4] == '1' ? 1 : 0;
-  }
-
-  return true;
-}
-
-// strictly 0 to 9, no leading zero, not larger than 3600 * 1000
-static bool nat_is_valid(const char *str)
-{
-  size_t len = strlen(str);
-  if (len == 0)
-  {
-    return false;
-  }
-
-  for (int i = 0; i < len; i++)
-  {
-    if (str[i] < '0' || str[i] > '9')
-      return false;
-  }
-
-  if (str[0] == '0' && len > 1)
-    return false;
-
-  return true;
-}
-
-// return true if succeeded.
-static bool parse_index_phase(const char *p, int *p_index, int *p_phase)
-{
-#define PARSE_BY_COMPARE(x, y, z) \
-  if (0 == strcmp(p, x)) { *p_index = y; *p_phase = z; return true; }
-
-  PARSE_BY_COMPARE("1a", 0, 0);
-  PARSE_BY_COMPARE("2a", 1, 0);
-  PARSE_BY_COMPARE("3a", 2, 0);
-  PARSE_BY_COMPARE("4a", 3, 0);
-  PARSE_BY_COMPARE("5a", 4, 0);
-  PARSE_BY_COMPARE("6a", 5, 0);
-  PARSE_BY_COMPARE("7a", 6, 0);
-  PARSE_BY_COMPARE("8a", 7, 0);
-  PARSE_BY_COMPARE("9a", 8, 0);
-  PARSE_BY_COMPARE("10a", 9, 0);
-  PARSE_BY_COMPARE("11a", 10, 0);
-  PARSE_BY_COMPARE("12a", 11, 0);
-  PARSE_BY_COMPARE("13a", 12, 0);
-  PARSE_BY_COMPARE("14a", 13, 0);
-  PARSE_BY_COMPARE("15a", 14, 0);
-  PARSE_BY_COMPARE("16a", 15, 0);
-
-  PARSE_BY_COMPARE("1b", 0, 1);
-  PARSE_BY_COMPARE("2b", 1, 1);
-  PARSE_BY_COMPARE("3b", 2, 1);
-  PARSE_BY_COMPARE("4b", 3, 1);
-  PARSE_BY_COMPARE("5b", 4, 1);
-  PARSE_BY_COMPARE("6b", 5, 1);
-  PARSE_BY_COMPARE("7b", 6, 1);
-  PARSE_BY_COMPARE("8b", 7, 1);
-  PARSE_BY_COMPARE("9b", 8, 1);
-  PARSE_BY_COMPARE("10b", 9, 1);
-  PARSE_BY_COMPARE("11b", 10, 1);
-  PARSE_BY_COMPARE("12b", 11, 1);
-  PARSE_BY_COMPARE("13b", 12, 1);
-  PARSE_BY_COMPARE("14b", 13, 1);
-  PARSE_BY_COMPARE("15b", 14, 1);
-  PARSE_BY_COMPARE("16b", 15, 1);
-#undef PARSE_BY_COMPARE
-  return false;
-}
-
-
-
 /*
  * example:
  *  define 1 a 11111,11111,11111;22222,22222,22222;00000,00000,00000 33 100
@@ -424,7 +309,6 @@ static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context)
   int profile_index;
   int profile_phase;
   phase_t phase;
-  long int nat;
 
   uint8_t count = embeddedCliGetTokenCount(args);
 
@@ -464,7 +348,7 @@ static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context)
   }
 
   p = embeddedCliGetToken(args, 5);
-  if (!parse_phase_duration(p, &phase.level))
+  if (!parse_phase_level(p, &phase.level))
   {
     printf("error: invalid phase level.\r\n");
     return;
