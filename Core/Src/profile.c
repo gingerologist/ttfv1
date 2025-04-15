@@ -68,6 +68,7 @@ static const uint16_t c_pin[4][9] =
 
 static char long_buf[256] = {0};
 
+#if 0
 /**
  * 0-8 		9 profiles
  * 9		all zero (used for stop)
@@ -87,6 +88,7 @@ static profile_t profile[13] = {
 			.duration_b_sec = 0xdeadbeef
 		},
 		{}, {}};	// profile[11], profile[12]
+#endif
 
 static profile_v2_t profile_v2[19] =
 {
@@ -112,6 +114,8 @@ static profile_v2_t profile_v2[19] =
 };
 
 extern CRC_HandleTypeDef hcrc;
+
+static HAL_StatusTypeDef save_profiles_v2(void);
 
 #if 0
 
@@ -192,6 +196,14 @@ void print_profile(int i)
 #endif
 }
 
+void print_profile_v2(int i)
+{
+  for (int i = 0; i < 16; i++)
+  {
+
+  }
+}
+
 #if 0
 profile_t get_profile(int index)
 {
@@ -205,13 +217,13 @@ profile_t get_profile(int index)
 }
 #endif
 
+#if 0
 void set_profile(int index,
 				uint32_t pgcfg_a[4],
 				uint32_t *duration_a_sec,
 				uint32_t pgcfg_b[4],
 				uint32_t *duration_b_sec)
 {
-#if 0
 	if (pgcfg_a != NULL)
 	{
 		profile[index].pgcfg_a[0] = pgcfg_a[0];
@@ -239,7 +251,22 @@ void set_profile(int index,
 	}
 
 	save_profiles();
+
+}
 #endif
+
+void set_profile_phase(int profile_index, int phase_index, phase_t * phase)
+{
+  if (phase_index == 0)
+  {
+    profile_v2[profile_index].a = *phase;
+  }
+  else
+  {
+    profile_v2[profile_index].b = *phase;
+  }
+
+  save_profiles();
 }
 
 #if 0
@@ -468,10 +495,6 @@ static HAL_StatusTypeDef erase_last_sector(void)
   EraseInitStruct.NbSectors = 1;
 
   status = HAL_FLASHEx_Erase(&EraseInitStruct, &SectorError);
-
-  /* Lock the Flash to disable the flash control register access */
-  HAL_FLASH_Lock();
-
   return status;
 }
 
@@ -486,7 +509,7 @@ static HAL_StatusTypeDef save_profiles_v2(void)
 
   // calculate crc
   uint32_t crc = HAL_CRC_Calculate(&hcrc, (uint32_t*) profile_v2,
-      sizeof(profile_v2_t) * 16 / 4);
+      sizeof(profile_v2_t) * 16 / sizeof(uint32_t));
 
   /* Unlock the Flash to enable the flash control register access */
   HAL_FLASH_Unlock();
@@ -527,13 +550,13 @@ static HAL_StatusTypeDef save_profiles_v2(void)
 
 static void load_profiles_v2(void)
 {
-  static profile_v2_t _profile[16];
+  static profile_v2_t _profile[NUM_OF_PROFILES];
 
-  for (int i = 0; i < 16; i++)
+  for (int i = 0; i < NUM_OF_PROFILES; i++)
   {
-    for (int j = 0; j < 12; j++)
+    for (int j = 0; j < sizeof(profile_v2_t) / 4; j++)
     {
-      _profile[i].word[j] = *((__IO uint32_t *)(LAST_SECTOR_ADDR + i * 48 + j * 4));
+      _profile[i].word[j] = *((__IO uint32_t *)(LAST_SECTOR_ADDR + i * sizeof(profile_v2_t) + j * 4));
     }
   }
 

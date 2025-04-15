@@ -1,25 +1,26 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2024 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
-
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2024 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <errno.h>
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -72,8 +73,8 @@ static void MX_SPI1_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_CRC_Init(void);
 static void MX_SPI2_Init(void);
-void StartProfileTask(void const * argument);
-void StartUxTask(void const * argument);
+void StartProfileTask(void const *argument);
+void StartUxTask(void const *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -91,11 +92,11 @@ void uart_printf(UART_HandleTypeDef *huart, const char *fmt, ...)
   len = vsnprintf(buf, sizeof(buf), fmt, args);
   va_end(args);
 
-  HAL_UART_Transmit(huart, (uint8_t*)buf, len, HAL_MAX_DELAY);
+  HAL_UART_Transmit(huart, (uint8_t*) buf, len, HAL_MAX_DELAY);
 }
 
 // TODO remove this function
-static void UART2_write(const char * str)
+static void UART2_write(const char *str)
 {
   int len = strlen(str);
   if (len == 0)
@@ -103,7 +104,7 @@ static void UART2_write(const char * str)
     return;
   }
 
-  HAL_UART_Transmit(&huart2, (const uint8_t *)str, len, HAL_MAX_DELAY);
+  HAL_UART_Transmit(&huart2, (const uint8_t*) str, len, HAL_MAX_DELAY);
 }
 
 void print_line(const char *str)
@@ -111,12 +112,25 @@ void print_line(const char *str)
   UART2_write(str);
   UART2_write("\r\n");
 }
+
+int _write(int file, char *ptr, int len)
+{
+  // Redirect stdout (file=1) and stderr (file=2) to UART2
+  if (file == 1 || file == 2)
+  {
+    HAL_UART_Transmit(&huart2, (uint8_t*) ptr, len, HAL_MAX_DELAY);
+    return len;
+  }
+
+  errno = EBADF;
+  return -1;
+}
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
 
@@ -198,22 +212,24 @@ int main(void)
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_OscInitTypeDef RCC_OscInitStruct =
+  { 0 };
+  RCC_ClkInitTypeDef RCC_ClkInitStruct =
+  { 0 };
 
   /** Configure the main internal regulator output voltage
-  */
+   */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
@@ -228,9 +244,9 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+      | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -244,10 +260,10 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief CRC Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief CRC Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_CRC_Init(void)
 {
 
@@ -270,10 +286,10 @@ static void MX_CRC_Init(void)
 }
 
 /**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief I2C1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_I2C1_Init(void)
 {
 
@@ -304,10 +320,10 @@ static void MX_I2C1_Init(void)
 }
 
 /**
-  * @brief SPI1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief SPI1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_SPI1_Init(void)
 {
 
@@ -342,10 +358,10 @@ static void MX_SPI1_Init(void)
 }
 
 /**
-  * @brief SPI2 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief SPI2 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_SPI2_Init(void)
 {
 
@@ -380,10 +396,10 @@ static void MX_SPI2_Init(void)
 }
 
 /**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief USART2 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_USART2_UART_Init(void)
 {
 
@@ -413,8 +429,8 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
-  * Enable DMA controller clock
-  */
+ * Enable DMA controller clock
+ */
 static void MX_DMA_Init(void)
 {
 
@@ -429,13 +445,14 @@ static void MX_DMA_Init(void)
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_GPIO_Init(void)
 {
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitTypeDef GPIO_InitStruct =
+  { 0 };
   /* USER CODE BEGIN MX_GPIO_Init_1 */
   /* USER CODE END MX_GPIO_Init_1 */
 
@@ -449,7 +466,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LEDC_GPIO_Port, LEDC_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : SW1_Pin SW3_Pin SW4_Pin */
-  GPIO_InitStruct.Pin = SW1_Pin|SW3_Pin|SW4_Pin;
+  GPIO_InitStruct.Pin = SW1_Pin | SW3_Pin | SW4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -488,60 +505,61 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void TestAD9834(void)
 {
-    uint8_t data[2];
+  uint8_t data[2];
 
-    // Configure FSYNC pin as output
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    GPIO_InitStruct.Pin = GPIO_PIN_12;  // PB12 for FSYNC
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  // Configure FSYNC pin as output
+  GPIO_InitTypeDef GPIO_InitStruct =
+  { 0 };
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  GPIO_InitStruct.Pin = GPIO_PIN_12;  // PB12 for FSYNC
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    // Set FSYNC high initially
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+  // Set FSYNC high initially
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 
-    // Control word: B28=1, RESET=1
-    data[0] = 0x21;
-    data[1] = 0x00;
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(&hspi2, (uint8_t*)&data, 2, HAL_MAX_DELAY);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+  // Control word: B28=1, RESET=1
+  data[0] = 0x21;
+  data[1] = 0x00;
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 2, HAL_MAX_DELAY);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 
-    HAL_Delay(100);
+  HAL_Delay(100);
 
-    // FREQLW
-    // data[0] = 0x50;
-    // data[1] = 0xC7;
-    data[0] = 0x44;
-    data[1] = 0x9c;
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(&hspi2, (uint8_t*)&data, 2, HAL_MAX_DELAY);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+  // FREQLW
+  // data[0] = 0x50;
+  // data[1] = 0xC7;
+  data[0] = 0x44;
+  data[1] = 0x9c;
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 2, HAL_MAX_DELAY);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 
-    // FREQHW
-    // data[0] = 0x40;
-    // data[1] = 0x00;
-    data[0] = 0x40;
-    data[1] = 0x83;
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(&hspi2, (uint8_t*)&data, 2, HAL_MAX_DELAY);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+  // FREQHW
+  // data[0] = 0x40;
+  // data[1] = 0x00;
+  data[0] = 0x40;
+  data[1] = 0x83;
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 2, HAL_MAX_DELAY);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 
-    // Phase register
-    data[0] = 0xC0;
-    data[1] = 0x00;
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(&hspi2, (uint8_t*)&data, 1, HAL_MAX_DELAY);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+  // Phase register
+  data[0] = 0xC0;
+  data[1] = 0x00;
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 1, HAL_MAX_DELAY);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 
-    // Control word: B28=1, RESET=0 (enable output)
-    data[0] = 0x20;
-    data[1] = 0x00;
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(&hspi2, (uint8_t*)&data, 2, HAL_MAX_DELAY);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+  // Control word: B28=1, RESET=0 (enable output)
+  data[0] = 0x20;
+  data[1] = 0x00;
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 2, HAL_MAX_DELAY);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 }
 
 void print_tca9555(void)
@@ -639,12 +657,12 @@ void print_tca9555(void)
 
 /* USER CODE BEGIN Header_StartProfileTask */
 /**
-  * @brief  Function implementing the profileTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
+ * @brief  Function implementing the profileTask thread.
+ * @param  argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartProfileTask */
-__weak void StartProfileTask(void const * argument)
+__weak void StartProfileTask(void const *argument)
 {
   /* USER CODE BEGIN 5 */
 //  /* Infinite loop */
@@ -718,16 +736,16 @@ __weak void StartProfileTask(void const * argument)
 
 /* USER CODE BEGIN Header_StartUxTask */
 /**
-* @brief Function implementing the uxTask thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the uxTask thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartUxTask */
-__weak void StartUxTask(void const * argument)
+__weak void StartUxTask(void const *argument)
 {
   /* USER CODE BEGIN StartUxTask */
   /* Infinite loop */
-  for(;;)
+  for (;;)
   {
     osDelay(1);
   }
@@ -735,13 +753,13 @@ __weak void StartUxTask(void const * argument)
 }
 
 /**
-  * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM2 interrupt took place, inside
-  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
-  * a global variable "uwTick" used as application time base.
-  * @param  htim : TIM handle
-  * @retval None
-  */
+ * @brief  Period elapsed callback in non blocking mode
+ * @note   This function is called  when TIM2 interrupt took place, inside
+ * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+ * a global variable "uwTick" used as application time base.
+ * @param  htim : TIM handle
+ * @retval None
+ */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
@@ -757,9 +775,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 }
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */

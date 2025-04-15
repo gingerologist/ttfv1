@@ -11,15 +11,13 @@
 #include <stdint.h>
 #include <assert.h>
 
-// this board has 4 group of pads
-// each group has 9 pads
-// both pgcfg_a and pgcfg_b use 18
-typedef struct {
-	uint32_t pgcfg_a[4];
-	uint32_t pgcfg_b[4];
-	uint32_t duration_a_sec;
-	uint32_t duration_b_sec;
-} profile_t;
+#define SIZE_OF_DOUBLEWORD            8
+#define SIZE_OF_WORD                  4
+#define NUM_OF_PROFILES               16
+
+#define SIZE_OF_PROFILE_IN_WORD       10
+#define SIZE_OF_PROFILE_IN_DOUBLEWORD 5
+#define SIZE_OF_PROFILES              (sizeof(profile_v2_t) * NUM_OF_PROFILES)
 
 // suppress the IDE syntax error (yellow mark) by
 // Project --> Properties --> C/C++ General --> Preprocessor Include Paths, Macros etc.
@@ -27,56 +25,71 @@ typedef struct {
 //
 //   _Static_assert(a,b)
 //
-_Static_assert(sizeof(profile_t) == 40, "profile_t size not 40");
 
+// each rowcfg_t packs 15 pads in total, into one word.
 typedef union
 {
-  uint16_t data;
+  uint32_t word;
   struct __attribute__((packed)) {
-    unsigned int rsvd:6;
-    unsigned int middle:2;
-    unsigned int left:2;
-    unsigned int bottom:2;
-    unsigned int right:2;
-    unsigned int top:2;
+    unsigned int d____:2;
+    unsigned int c_bot:2;
+    unsigned int c_rgt:2;
+    unsigned int c_mid:2;
+    unsigned int c_lft:2;
+    unsigned int c_top:2;
+    unsigned int b_bot:2;
+    unsigned int b_rgt:2;
+    unsigned int b_mid:2;
+    unsigned int b_lft:2;
+    unsigned int b_top:2;
+    unsigned int a_bot:2;
+    unsigned int a_rgt:2;
+    unsigned int a_mid:2;
+    unsigned int a_lft:2;
+    unsigned int a_top:2;
   };
-} pad_star_t;
+} rowcfg_t;
 
-_Static_assert(sizeof(pad_star_t) == 2, "pad_star_t size not 2");
+_Static_assert(sizeof(rowcfg_t) == 4, "rowcfg_t size not 4");
 
+// three rows of pads in total
 typedef struct
 {
-  pad_star_t cfg[3][3];   // cfg [row][col]
-} pgcfg_v2_t;
+  rowcfg_t row[3];
+} padscfg_t;
 
-_Static_assert(sizeof(pgcfg_v2_t) == 18, "pad_star_t size not 2");
+_Static_assert(sizeof(padscfg_t) == 12, "padscfg_t size not 12");
 
-// in profile_v2_t
+// single phase contains configuration of all pads, duration and voltage level
+typedef struct
+{
+  padscfg_t pads;
+  int duration;      // max 3600
+  int level;         // max 100
+} phase_t;
+
+_Static_assert(sizeof(phase_t) == 20, "phase_t size not 20");
+
 typedef union __attribute__((packed))
 {
-  uint32_t word[12];
-  struct __attribute__((packed))
+  uint32_t word[sizeof(phase_t) * 2 / sizeof(uint32_t)];
+  struct
   {
-    pgcfg_v2_t pgcfg_a;
-    pgcfg_v2_t pgcfg_b;
-    uint32_t duration_a_sec;
-    uint32_t duration_b_sec;
-    uint32_t level;
+    phase_t a;
+    phase_t b;
   };
 } profile_v2_t;
 
-_Static_assert(sizeof(profile_v2_t) == 48, "profile_t size not 40");
+_Static_assert(sizeof(profile_v2_t) == 40, "profile_t size not 40");
 
 void print_profile(int index);
-void print_profile_v2(void);
+void print_profile_v2(int index);
 
 void do_profile_by_key(int profile_index);
 void do_profile_blink(void);
-profile_t get_profile(int index);
-void set_profile(int index,
-				uint32_t pgcfg_a[4],
-				uint32_t *duration_a_sec,
-				uint32_t pgcfg_b[4],
-				uint32_t *duration_b_sec);
+// profile_t get_profile(int index);
+
+void set_profile_phase(int profile_index, int profile_phase, phase_t * phase);
+
 
 #endif /* INC_PROFILE_H_ */
