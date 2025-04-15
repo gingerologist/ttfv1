@@ -14,9 +14,9 @@
 #include "main.h"
 #include "profile.h"
 
-#if 0
-
 extern osMessageQId requestQueueHandle;
+
+#if 0
 
 /* Private includes ----------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
@@ -66,31 +66,6 @@ static const uint16_t c_pin[4][9] =
 };
 #endif
 
-static char long_buf[256] =
-{ 0 };
-
-#if 0
-/**
- * 0-8 		9 profiles
- * 9		all zero (used for stop)
- * 10		all deadbeef (used for blink)
- * 11		current
- * 12 		next
- */
-static profile_t profile[13] = {
-		{}, {}, {},
-		{}, {}, {},
-		{}, {}, {},
-		{}, // profile[9]
-		{	// profile[10]
-			.pgcfg_a = { 0xdeadbeef, 0xdeadbeef, 0xdeadbeef, 0xdeadbeef },
-			.pgcfg_b = { 0xdeadbeef, 0xdeadbeef, 0xdeadbeef, 0xdeadbeef },
-			.duration_a_sec = 0xdeadbeef,
-			.duration_b_sec = 0xdeadbeef
-		},
-		{}, {}};	// profile[11], profile[12]
-#endif
-
 static profile_t profile_v2[19] =
 {
   { },  // 0
@@ -119,105 +94,90 @@ extern CRC_HandleTypeDef hcrc;
 static HAL_StatusTypeDef save_profiles(void);
 static HAL_StatusTypeDef load_profiles(void);
 
-#if 0
+
 
 /* Private function prototypes -----------------------------------------------*/
-static void print_pad_group_config(uint32_t pg_cfg, pgcfg_strbuf_t *buf);
-static HAL_StatusTypeDef save_profiles(void);
-static void load_profiles(void);
+
 
 /* Private user code ---------------------------------------------------------*/
 
-static void print_pad_group_config(uint32_t pg_cfg, pgcfg_strbuf_t* buf)
-{
-	if (buf == NULL) return;
 
-	for (int i = 0; i < 9; i++)
-	{
-		uint32_t bits = (pg_cfg >> (2 * i)) & 0x00000003;
-		if (bits == 0)
-		{
-			buf->buf[i] = '0';
-		}
-		else if (bits == 1)
-		{
-			buf->buf[i] = '1';
-		}
-		else if (bits == 2)
-		{
-			buf->buf[i] = '2';
-		}
-		else
-		{
-			buf->buf[i] = '-';
-		}
-	}
-
-	buf->buf[9] = '\0';
-}
-#endif
 
 /* Public user code ---------------------------------------------------------*/
-void print_profile(int i)
+
+static char cfg2char(unsigned int cfg)
 {
-#if 0
-	static pgcfg_strbuf_t buf[4];
-
-	for (int j = 0; j < 4; j++)
-	{
-		print_pad_group_config(profile[i].pgcfg_a[j], &buf[j]);
-	}
-
-	snprintf(long_buf,
-			256,
-			"Profile #%d phase a: %s %s %s %s, duration: %ld sec",
-			i + 1,
-			buf[0].buf,
-			buf[1].buf,
-			buf[2].buf,
-			buf[3].buf,
-			profile[i].duration_a_sec);
-	print_line(long_buf);
-
-	for (int j = 0; j < 4; j++)
-	{
-		print_pad_group_config(profile[i].pgcfg_b[j], &buf[j]);
-	}
-
-	snprintf(long_buf,
-			256,
-			"           phase b: %s %s %s %s, duration: %ld sec",
-			buf[0].buf,
-			buf[1].buf,
-			buf[2].buf,
-			buf[3].buf,
-			profile[i].duration_b_sec);
-	print_line(long_buf);
-
-	print_line(NULL);
-#endif
-}
-
-void print_profile_v2(int i)
-{
-  for (int i = 0; i < 16; i++)
+  if (cfg == 0)
   {
-
+    return '0';
+  }
+  else if (cfg == 1)
+  {
+    return '1';
+  }
+  else if (cfg == 2)
+  {
+    return '2';
+  }
+  else
+  {
+    return '*';
   }
 }
 
-#if 0
+static void print_allpads_str(allpads_t *pads, char str[54])
+{
+  for (int i = 0; i < 3; i++)
+  {
+    str[i * 18 + 0]  = cfg2char(pads->row[i].a_top);
+    str[i * 18 + 1]  = cfg2char(pads->row[i].a_lft);
+    str[i * 18 + 2]  = cfg2char(pads->row[i].a_mid);
+    str[i * 18 + 3]  = cfg2char(pads->row[i].a_rgt);
+    str[i * 18 + 4]  = cfg2char(pads->row[i].a_bot);
+    str[i * 18 + 5]  = ',';
+    str[i * 18 + 6]  = cfg2char(pads->row[i].b_top);
+    str[i * 18 + 7]  = cfg2char(pads->row[i].b_lft);
+    str[i * 18 + 8]  = cfg2char(pads->row[i].b_mid);
+    str[i * 18 + 9]  = cfg2char(pads->row[i].b_rgt);
+    str[i * 18 + 10] = cfg2char(pads->row[i].b_bot);
+    str[i * 18 + 11] = ',';
+    str[i * 18 + 12] = cfg2char(pads->row[i].c_top);
+    str[i * 18 + 13] = cfg2char(pads->row[i].c_lft);
+    str[i * 18 + 14] = cfg2char(pads->row[i].c_mid);
+    str[i * 18 + 15] = cfg2char(pads->row[i].c_rgt);
+    str[i * 18 + 16] = cfg2char(pads->row[i].c_bot);
+    str[i * 18 + 17] = i == 2 ? 0 : ';';
+  }
+}
+
+void print_profile(int i)
+{
+  static char str[54];
+
+  if (i >= 16)
+  {
+    return;
+  }
+
+  print_allpads_str(&profile_v2[i].a.pads, str);
+  printf("Profile #%02d phase a: %s in %d seconds at %d volts\r\n", i, str,
+      profile_v2[i].a.duration, profile_v2[i].a.level);
+
+  print_allpads_str(&profile_v2[i].b.pads, str);
+  printf("            phase b: %s in %d seconds at %d volts\r\n", str,
+      profile_v2[i].b.duration, profile_v2[i].b.level);
+}
+
 profile_t get_profile(int index)
 {
-	if (index > -1 && index < 9)
-	{
-		return profile[index];
-	}
+  profile_t profile = {0};
 
-	profile_t profile = {0};
+	if (index > -1 && index < 16)
+	{
+		return profile_v2[index];
+	}
 	return profile;
 }
-#endif
 
 void set_profile_phase(int profile_index, int phase_index, phase_t *phase)
 {
@@ -302,11 +262,6 @@ void do_profile_by_key(int key)
 }
 #endif
 
-void do_profile_blink()
-{
-  // xQueueSend(requestQueueHandle, &profile[10], 0);
-}
-
 void StartProfileTask(void const *argument)
 {
   HAL_StatusTypeDef status;
@@ -323,14 +278,39 @@ void StartProfileTask(void const *argument)
     printf("no profiles stored in flash\r\n");
   }
 
-  for (int i = 0;;i++)
+  for (;;)
   {
     vTaskDelay(1000);
-
-    printf("hello #%d\r\n", i);
   }
-}
+/*
+entry_point:
+  CURR_PROFILE = NEXT_PROFILE;
 
+  for (;;)
+  {
+    uint32_t dur;
+
+    update_all_switches(CURR_PROFILE.pgcfg_a);
+    dur = CURR_PROFILE.duration_a_sec * 1000;
+    if (dur == 0)
+      dur = portMAX_DELAY;
+
+    if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, dur))
+    {
+      goto entry_point;
+    }
+
+    update_all_switches(CURR_PROFILE.pgcfg_b);
+    dur = CURR_PROFILE.duration_b_sec * 1000;
+    if (dur == 0)
+      dur = portMAX_DELAY;
+
+    if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, dur))
+    {
+      goto entry_point;
+    }
+  } */
+}
 
 #if 0
 void StartProfileTask(void const * argument)

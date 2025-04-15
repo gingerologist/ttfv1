@@ -52,7 +52,7 @@ static void cli_writeChar(EmbeddedCli *embeddedCli, char c)
 
 static void CLI_CMD_List(EmbeddedCli *cli, char *args, void *context)
 {
-  for (int i = 0; i < 9; i++)
+  for (int i = 0; i < 16; i++)
   {
     print_profile(i);
   }
@@ -369,18 +369,6 @@ CliCommandBinding cli_cmd_define_binding =
   NULL,
   CLI_CMD_Define };
 
-static void CLI_CMD_Blink(EmbeddedCli *cli, char *args, void *context)
-{
-  do_profile_blink();
-}
-
-CliCommandBinding cli_cmd_blink_binding =
-{ "blink",
-  "Blink all leds (for test purpose only).",
-  false,
-  NULL,
-  CLI_CMD_Blink };
-
 static void CLI_CMD_Reboot(EmbeddedCli *cli, char *args, void *context)
 {
   NVIC_SystemReset();
@@ -400,7 +388,6 @@ void StartUxTask(void const *argument)
   cli = embeddedCliNew(cli_config);
   cli->writeChar = cli_writeChar;
 
-  embeddedCliAddBinding(cli, cli_cmd_blink_binding);
   embeddedCliAddBinding(cli, cli_cmd_list_binding);
   embeddedCliAddBinding(cli, cli_cmd_define_binding);
   embeddedCliAddBinding(cli, cli_cmd_reboot_binding);

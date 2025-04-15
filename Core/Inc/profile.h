@@ -63,7 +63,7 @@ typedef struct
 _Static_assert(sizeof(phase_t) == 20, "phase_t size not 20");
 
 // each profile contains two phases.
-typedef union __attribute__((packed))
+typedef union
 {
   uint32_t word[sizeof(phase_t) * 2 / sizeof(uint32_t)];
   struct
@@ -76,10 +76,9 @@ typedef union __attribute__((packed))
 _Static_assert(sizeof(profile_t) == 40, "profile_t size not 40");
 
 void print_profile(int index);
-void print_profile_v2(int index);
 
 void do_profile_by_key(int profile_index);
-void do_profile_blink(void);
+
 // profile_t get_profile(int index);
 
 void set_profile_phase(int profile_index, int phase_index, phase_t * phase);
