@@ -20,7 +20,7 @@
 #include "profile.h"
 
 /**
- * TODO https://github.com/MaJerle/stm32-usart-uart-dma-rx-tx
+ * SOMEDAY https://github.com/MaJerle/stm32-usart-uart-dma-rx-tx
  * https://deepbluembedded.com/how-to-receive-uart-serial-data-with-stm32-dma-interrupt-polling/
  */
 
@@ -307,7 +307,7 @@ static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context)
 {
   const char *p;
   int profile_index;
-  int profile_phase;
+  int phase_index;
   phase_t phase;
 
   uint8_t count = embeddedCliGetTokenCount(args);
@@ -327,7 +327,7 @@ static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context)
   }
 
   p = embeddedCliGetToken(args, 2);
-  if (!parse_phase_index(p, &profile_phase))
+  if (!parse_phase_index(p, &phase_index))
   {
     printf("error: invalid profile phase.\r\n");
     return;
@@ -354,7 +354,7 @@ static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context)
     return;
   }
 
-  // set_profile_phase(profile_index, )
+  set_profile_phase(profile_index, phase_index, &phase);
 
   print_profile(profile_index);
 }

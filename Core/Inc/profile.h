@@ -11,14 +11,6 @@
 #include <stdint.h>
 #include <assert.h>
 
-#define SIZE_OF_DOUBLEWORD            8
-#define SIZE_OF_WORD                  4
-#define NUM_OF_PROFILES               16
-
-#define SIZE_OF_PROFILE_IN_WORD       10
-#define SIZE_OF_PROFILE_IN_DOUBLEWORD 5
-#define SIZE_OF_PROFILES              (sizeof(profile_v2_t) * NUM_OF_PROFILES)
-
 // suppress the IDE syntax error (yellow mark) by
 // Project --> Properties --> C/C++ General --> Preprocessor Include Paths, Macros etc.
 // On the Entries tab, select CDT User Setting Entries, then click Add

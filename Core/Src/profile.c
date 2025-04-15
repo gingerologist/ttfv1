@@ -66,7 +66,8 @@ static const uint16_t c_pin[4][9] =
 };
 #endif
 
-static char long_buf[256] = {0};
+static char long_buf[256] =
+{ 0 };
 
 #if 0
 /**
@@ -111,11 +112,12 @@ static profile_t profile_v2[19] =
   { },  // 16, all zero (used for stop?)
   { },  // 17, current
   { },  // 18, next
-};
+    };
 
 extern CRC_HandleTypeDef hcrc;
 
-static HAL_StatusTypeDef save_profiles_v2(void);
+static HAL_StatusTypeDef save_profiles(void);
+static HAL_StatusTypeDef load_profiles(void);
 
 #if 0
 
@@ -217,45 +219,7 @@ profile_t get_profile(int index)
 }
 #endif
 
-#if 0
-void set_profile(int index,
-				uint32_t pgcfg_a[4],
-				uint32_t *duration_a_sec,
-				uint32_t pgcfg_b[4],
-				uint32_t *duration_b_sec)
-{
-	if (pgcfg_a != NULL)
-	{
-		profile[index].pgcfg_a[0] = pgcfg_a[0];
-		profile[index].pgcfg_a[1] = pgcfg_a[1];
-		profile[index].pgcfg_a[2] = pgcfg_a[2];
-		profile[index].pgcfg_a[3] = pgcfg_a[3];
-	}
-
-	if (duration_a_sec != NULL)
-	{
-		profile[index].duration_a_sec = *duration_a_sec;
-	}
-
-	if (pgcfg_b != NULL)
-	{
-		profile[index].pgcfg_b[0] = pgcfg_b[0];
-		profile[index].pgcfg_b[1] = pgcfg_b[1];
-		profile[index].pgcfg_b[2] = pgcfg_b[2];
-		profile[index].pgcfg_b[3] = pgcfg_b[3];
-	}
-
-	if (duration_b_sec != NULL)
-	{
-		profile[index].duration_b_sec = *duration_b_sec;
-	}
-
-	save_profiles();
-
-}
-#endif
-
-void set_profile_phase(int profile_index, int phase_index, phase_t * phase)
+void set_profile_phase(int profile_index, int phase_index, phase_t *phase)
 {
   if (phase_index == 0)
   {
@@ -338,21 +302,35 @@ void do_profile_by_key(int key)
 }
 #endif
 
-
 void do_profile_blink()
 {
-	// xQueueSend(requestQueueHandle, &profile[10], 0);
+  // xQueueSend(requestQueueHandle, &profile[10], 0);
 }
 
-void StartProfileTask(void const * argument)
+void StartProfileTask(void const *argument)
 {
+  HAL_StatusTypeDef status;
+
   vTaskDelay(100);
-  for (;;)
+
+  status = load_profiles();
+  if (status == HAL_OK)
   {
-    // print_line("hello");
+    printf("profiles loaded from flash\r\n");
+  }
+  else
+  {
+    printf("no profiles stored in flash\r\n");
+  }
+
+  for (int i = 0;;i++)
+  {
     vTaskDelay(1000);
+
+    printf("hello #%d\r\n", i);
   }
 }
+
 
 #if 0
 void StartProfileTask(void const * argument)
@@ -445,20 +423,6 @@ profile_blink:
 }
 #endif
 
-#if 0
-// page size 2KB, table 29 flash memory characteristics, in datasheet (stm32f103ze.pdf)
-// stm32f103zEt6 where E stands for 512Kbytes of Flash memory
-// flash start 	0x08000000
-// flash size  	0x00080000
-// page        	0x00000800
-// lastpg start	0x0807f800
-
-// FLASH_PAGE_SIZE				  0x0800			// 2KB, already defined in stm32f1xx_hal_flash_ex.h
-#define FLASH_SIZE				  0x080000		// 512KB
-#define FLASH_ADDR_BASE			0x08000000
-#define LAST_PAGE_ADDR 			(FLASH_ADDR_BASE + FLASH_SIZE - FLASH_PAGE_SIZE)
-#endif
-
 // STM32F405 Flash memory is organized in sectors of varying sizes
 // STM32F405 has 1MB Flash (0x100000 bytes)
 // Flash starts at 0x08000000
@@ -470,19 +434,16 @@ profile_blink:
 
 #define FLASH_SIZE              0x00100000  // 1MB
 #define FLASH_ADDR_BASE         0x08000000
-#define FLASH_LAST_SECTOR       11
-#define FLASH_SECTOR_11_SIZE    0x00020000  // 128KB
-#define LAST_SECTOR_ADDR        (FLASH_ADDR_BASE + FLASH_SIZE - FLASH_SECTOR_11_SIZE)
-
-// For storing 768 bytes of data in the last sector
-#define DATA_STORAGE_ADDR       (LAST_SECTOR_ADDR)
+// #define FLASH_SECTOR_3
+#define FLASH_SECTOR_3_SIZE     0x00004000  // 16KB
+#define FLASH_SECTOR_3_ADDR     (FLASH_ADDR_BASE + FLASH_SECTOR_3_SIZE * 3)
 
 static void delay(void)
 {
-	vTaskDelay(50);
+  vTaskDelay(50);
 }
 
-static HAL_StatusTypeDef erase_last_sector(void)
+static HAL_StatusTypeDef erase_sector_3(void)
 {
   FLASH_EraseInitTypeDef EraseInitStruct;
   uint32_t SectorError = 0;
@@ -491,30 +452,37 @@ static HAL_StatusTypeDef erase_last_sector(void)
   /* Fill EraseInit structure */
   EraseInitStruct.TypeErase = FLASH_TYPEERASE_SECTORS;
   EraseInitStruct.VoltageRange = FLASH_VOLTAGE_RANGE_3; // Voltage range 2.7V to 3.6V
-  EraseInitStruct.Sector = FLASH_LAST_SECTOR;     // Sector 11
+  EraseInitStruct.Sector = FLASH_SECTOR_3;              // Sector 3
   EraseInitStruct.NbSectors = 1;
 
   status = HAL_FLASHEx_Erase(&EraseInitStruct, &SectorError);
   return status;
 }
 
+#define NUM_OF_PROFILES                 16
+
+#define SIZE_OF_PROFILE_IN_WORD         10
+#define SIZE_OF_PROFILE_IN_DOUBLEWORD   5
+#define SIZE_OF_PROFILES                (sizeof(profile_t) * NUM_OF_PROFILES)
+#define SIZE_OF_PROFILES_IN_DOUBLEWORD  (SIZE_OF_PROFILES / 8)
+#define SIZE_OF_PROFILES_IN_WORD        (SIZE_OF_PROFILES / 4)
+
 /*
- * write 16 profile_v2_t to flash.
+ * write profile_t[16] to flash. sizeof(profile_t) == 40.
  */
-static HAL_StatusTypeDef save_profiles_v2(void)
+static HAL_StatusTypeDef save_profiles(void)
 {
   HAL_StatusTypeDef status;
   uint64_t *dword = (uint64_t*) profile_v2;
-  int count = sizeof(profile_t) * 16 / 8;
 
   // calculate crc
   uint32_t crc = HAL_CRC_Calculate(&hcrc, (uint32_t*) profile_v2,
-      sizeof(profile_t) * 16 / sizeof(uint32_t));
+      SIZE_OF_PROFILES_IN_WORD);
 
   /* Unlock the Flash to enable the flash control register access */
   HAL_FLASH_Unlock();
 
-  status = erase_last_sector();
+  status = erase_sector_3();
   if (status != HAL_OK)
   {
     HAL_FLASH_Lock();
@@ -524,10 +492,10 @@ static HAL_StatusTypeDef save_profiles_v2(void)
   delay();
 
   // write profile
-  for (int i = 0; i < count; i++)
+  for (int i = 0; i < SIZE_OF_PROFILES_IN_DOUBLEWORD; i++)
   {
     status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD,
-        (LAST_SECTOR_ADDR + i * sizeof(uint64_t)), dword[i]);
+        (FLASH_SECTOR_3_ADDR + i * sizeof(uint64_t)), dword[i]);
 
     if (status != HAL_OK)
     {
@@ -540,7 +508,7 @@ static HAL_StatusTypeDef save_profiles_v2(void)
 
   // write crc
   status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD,
-      (LAST_SECTOR_ADDR + count * sizeof(uint64_t)), crc);
+      (FLASH_SECTOR_3_ADDR + SIZE_OF_PROFILES), crc);
 
   HAL_FLASH_Lock();
   delay();
@@ -548,112 +516,37 @@ static HAL_StatusTypeDef save_profiles_v2(void)
   return status;
 }
 
-static void load_profiles_v2(void)
+static HAL_StatusTypeDef load_profiles(void)
 {
   static profile_t _profile[NUM_OF_PROFILES];
 
   for (int i = 0; i < NUM_OF_PROFILES; i++)
   {
-    for (int j = 0; j < sizeof(profile_t) / 4; j++)
+    for (int j = 0; j < SIZE_OF_PROFILE_IN_WORD; j++)
     {
-      _profile[i].word[j] = *((__IO uint32_t *)(LAST_SECTOR_ADDR + i * sizeof(profile_t) + j * 4));
+      _profile[i].word[j] = *((__IO uint32_t*) (FLASH_SECTOR_3_ADDR
+          + i * sizeof(profile_t) + j * 4));
     }
   }
 
-  uint32_t stored_crc  = *(__IO uint32_t *)(LAST_SECTOR_ADDR + 16 * 48);
-  uint32_t calculated_crc  = HAL_CRC_Calculate(&hcrc, (uint32_t *)_profile, sizeof(profile_t) * 16 / 4);
+  uint32_t stored_crc = *(__IO uint32_t*) (FLASH_SECTOR_3_ADDR + SIZE_OF_PROFILES);
+  uint32_t calculated_crc = HAL_CRC_Calculate(&hcrc, (uint32_t*) _profile,
+      SIZE_OF_PROFILES_IN_WORD);
 
   if (stored_crc != calculated_crc)
   {
-    print_line("error: bad crc when loading profiles.");
+    return HAL_ERROR;
   }
   else
   {
-    for (int i = 0; i < 16; i++)
+    for (int i = 0; i < NUM_OF_PROFILES; i++)
     {
       profile_v2[i] = _profile[i];
     }
 
-    print_line("profiles loaded.");
+    return HAL_OK;
   }
 }
 
-#if 0
-static HAL_StatusTypeDef save_profiles(void)
-{
-	FLASH_EraseInitTypeDef EraseInitStruct;
-	uint64_t *dword;
 
-	uint32_t calc = HAL_CRC_Calculate(&hcrc, (uint32_t *)profile, 90);
-
-	// unlock flash
-  HAL_FLASH_Unlock();
-
-    // erase page
-	EraseInitStruct.TypeErase = FLASH_TYPEERASE_PAGES;
-	EraseInitStruct.Banks = FLASH_BANK_1; // FLASHEx_Banks, possibly only required for mass erasure
-	EraseInitStruct.PageAddress = LAST_PAGE_ADDR;
-	EraseInitStruct.NbPages = 1;
-
-	uint32_t PageError;
-	if (HAL_FLASHEx_Erase(&EraseInitStruct, &PageError) != HAL_OK)		// Erase the Page Before a Write Operation
-	{
-		return HAL_ERROR;
-	}
-	delay();
-
-	// write profile
-	dword = (uint64_t *)profile;
-	for (int i = 0; i < 45; i++)
-	{
-		HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (LAST_PAGE_ADDR + i * sizeof(uint64_t)), dword[i]);
-		delay();
-	}
-
-	// write crc
-	HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, (LAST_PAGE_ADDR + 45 * sizeof(uint64_t)), (uint64_t)calc);
-	delay();
-
-	// unlock flash
-	HAL_FLASH_Lock();
-	return HAL_OK;
-}
-
-static void load_profiles(void)
-{
-	static profile_t prfl[9];
-
-	for (int i = 0; i < 9; i++)
-	{
-		prfl[i].pgcfg_a[0] 		= *(__IO uint32_t *)(LAST_PAGE_ADDR + i * 40 + 0);
-		prfl[i].pgcfg_a[1] 		= *(__IO uint32_t *)(LAST_PAGE_ADDR + i * 40 + 4);
-		prfl[i].pgcfg_a[2] 		= *(__IO uint32_t *)(LAST_PAGE_ADDR + i * 40 + 8);
-		prfl[i].pgcfg_a[3] 		= *(__IO uint32_t *)(LAST_PAGE_ADDR + i * 40 + 12);
-		prfl[i].pgcfg_b[0] 		= *(__IO uint32_t *)(LAST_PAGE_ADDR + i * 40 + 16);
-		prfl[i].pgcfg_b[1] 		= *(__IO uint32_t *)(LAST_PAGE_ADDR + i * 40 + 20);
-		prfl[i].pgcfg_b[2] 		= *(__IO uint32_t *)(LAST_PAGE_ADDR + i * 40 + 24);
-		prfl[i].pgcfg_b[3] 		= *(__IO uint32_t *)(LAST_PAGE_ADDR + i * 40 + 28);
-		prfl[i].duration_a_sec	= *(__IO uint32_t *)(LAST_PAGE_ADDR + i * 40 + 32);
-		prfl[i].duration_b_sec 	= *(__IO uint32_t *)(LAST_PAGE_ADDR + i * 40 + 36);
-	}
-
-	uint32_t crc = *(__IO uint32_t *)(LAST_PAGE_ADDR + 9 * 40);
-	uint32_t calc = HAL_CRC_Calculate(&hcrc, (uint32_t *)prfl, 90);
-
-	if (crc != calc)
-	{
-		print_line("error: bad crc when loading profiles.");
-	}
-	else
-	{
-		for (int i = 0; i < 9; i++)
-		{
-			profile[i] = prfl[i];
-		}
-
-		print_line("profiles loaded.");
-	}
-}
-
-#endif
 
