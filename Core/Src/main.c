@@ -557,63 +557,19 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-#if 0
 void DDS_Start(void)
 {
-  uint8_t data[2];
+  uint16_t data[5] =
+  { 0x2100,   // Control word: B28=1, RESET=1
+    0x449C,   // FREQLW
+    0x4083,   // FREQHW
+    0xC000,   // Phase register
+    0x2000 }; // Control word: B28=1, RESET=0 (enable output)
 
-  // Control word: B28=1, RESET=1
-  data[0] = 0x21;
-  data[1] = 0x00;
-  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 2, HAL_MAX_DELAY);
-
-  HAL_Delay(100);
-
-  // FREQLW
-  data[0] = 0x44;
-  data[1] = 0x9c;
-  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 2, HAL_MAX_DELAY);
-
-  // FREQHW
-  data[0] = 0x40;
-  data[1] = 0x83;
-  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 2, HAL_MAX_DELAY);
-
-  // Phase register
-  data[0] = 0xC0;
-  data[1] = 0x00;
-  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 2, HAL_MAX_DELAY);
-
-  // Control word: B28=1, RESET=0 (enable output)
-  data[0] = 0x20;
-  data[1] = 0x00;
-  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 2, HAL_MAX_DELAY);
-}
-#endif
-
-void DDS_Start(void)
-{
-  uint16_t data;
-
-  // Control word: B28=1, RESET=1
-  data = 0x2100;
-  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 1, HAL_MAX_DELAY);
-
-  // FREQLW
-  data = 0x449C;
-  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 1, HAL_MAX_DELAY);
-
-  // FREQHW
-  data = 0x4083;
-  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 1, HAL_MAX_DELAY);
-
-  // Phase register
-  data = 0xC000;
-  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 1, HAL_MAX_DELAY);
-
-  // Control word: B28=1, RESET=0 (enable output)
-  data = 0x2000;
-  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 1, HAL_MAX_DELAY);
+  for (int i = 0; i < 5; i++)
+  {
+    HAL_SPI_Transmit(&hspi2, (uint8_t*) &data[i], 1, HAL_MAX_DELAY);
+  }
 }
 
 void print_tca9555(void)
