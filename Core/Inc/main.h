@@ -55,6 +55,7 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 void print_line(const char* str);
+void DDS_Start(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

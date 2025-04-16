@@ -419,6 +419,8 @@ void StartProfileTask(void const *argument)
     printf("no profiles stored in flash\r\n");
   }
 
+  DDS_Start();
+
   for (;;)
   {
     vTaskDelay(1000);

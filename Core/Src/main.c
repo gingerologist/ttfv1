@@ -333,7 +333,8 @@ static void MX_DAC_Init(void)
   HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
 
   /* Set initial output to 700mV */
-  uint32_t dac_value = (700 * 4095) / 3300; /* Convert 700mV to DAC value */
+  uint32_t dac_in_mV = 350;
+  uint32_t dac_value = (dac_in_mV * 4095) / 3300; /* Convert 700mV to DAC value */
   HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, dac_value);
   /* USER CODE END DAC_Init 2 */
 
@@ -556,7 +557,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void TestAD9834(void)
+void DDS_Start(void)
 {
   uint8_t data[2];
 
@@ -583,8 +584,6 @@ void TestAD9834(void)
   HAL_Delay(100);
 
   // FREQLW
-  // data[0] = 0x50;
-  // data[1] = 0xC7;
   data[0] = 0x44;
   data[1] = 0x9c;
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
@@ -592,8 +591,6 @@ void TestAD9834(void)
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 
   // FREQHW
-  // data[0] = 0x40;
-  // data[1] = 0x00;
   data[0] = 0x40;
   data[1] = 0x83;
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
