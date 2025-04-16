@@ -431,7 +431,7 @@ static void MX_SPI2_Init(void)
   hspi2.Instance = SPI2;
   hspi2.Init.Mode = SPI_MODE_MASTER;
   hspi2.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi2.Init.DataSize = SPI_DATASIZE_16BIT;
   hspi2.Init.CLKPolarity = SPI_POLARITY_HIGH;
   hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi2.Init.NSS = SPI_NSS_HARD_OUTPUT;
@@ -557,6 +557,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+#if 0
 void DDS_Start(void)
 {
   uint8_t data[2];
@@ -587,6 +588,32 @@ void DDS_Start(void)
   data[0] = 0x20;
   data[1] = 0x00;
   HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 2, HAL_MAX_DELAY);
+}
+#endif
+
+void DDS_Start(void)
+{
+  uint16_t data;
+
+  // Control word: B28=1, RESET=1
+  data = 0x2100;
+  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 1, HAL_MAX_DELAY);
+
+  // FREQLW
+  data = 0x449C;
+  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 1, HAL_MAX_DELAY);
+
+  // FREQHW
+  data = 0x4083;
+  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 1, HAL_MAX_DELAY);
+
+  // Phase register
+  data = 0xC000;
+  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 1, HAL_MAX_DELAY);
+
+  // Control word: B28=1, RESET=0 (enable output)
+  data = 0x2000;
+  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 1, HAL_MAX_DELAY);
 }
 
 void print_tca9555(void)
