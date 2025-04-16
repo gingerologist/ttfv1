@@ -601,7 +601,7 @@ void DDS_Start(void)
   data[0] = 0xC0;
   data[1] = 0x00;
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 1, HAL_MAX_DELAY);
+  HAL_SPI_Transmit(&hspi2, (uint8_t*) &data, 2, HAL_MAX_DELAY);
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 
   // Control word: B28=1, RESET=0 (enable output)
