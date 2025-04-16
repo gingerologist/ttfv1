@@ -4,6 +4,10 @@
 #include "main.h"
 #include "ad9834.h"
 
+/*
+ * This file is not used, yet.
+ */
+
 // Pin definitions
 #define AD9834_RESET_PIN  GPIO_PIN_6
 #define AD9834_RESET_PORT GPIOC         // Changed to PC6
