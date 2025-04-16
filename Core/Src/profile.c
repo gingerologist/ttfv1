@@ -96,6 +96,8 @@ static HAL_StatusTypeDef load_profiles(void);
 
 
 
+
+
 /* Private function prototypes -----------------------------------------------*/
 
 
@@ -262,6 +264,145 @@ void do_profile_by_key(int key)
 }
 #endif
 
+// static const map[45] =
+typedef struct
+{
+  uint8_t addr;     // 0-6
+  uint8_t port;     // 0 or 1
+  uint8_t mask[3];  // see netmap initializer
+} netmap_t;
+
+// @format:off
+static const netmap_t nm[46] =
+{
+  { },
+  { 0, 1, { 0, 1 << 7, 1 << 6 } }, // P01
+  { 0, 1, { 0, 1 << 5, 1 << 4 } }, // P02
+  { 0, 1, { 0, 1 << 3, 1 << 2 } }, // P03
+  { 0, 1, { 0, 1 << 1, 1 << 0 } }, // P04
+  { 0, 0, { 0, 1 << 6, 1 << 7 } }, // P05
+  { 0, 0, { 0, 1 << 4, 1 << 5 } }, // P06
+  { 0, 0, { 0, 1 << 2, 1 << 3 } }, // P07
+  { 0, 0, { 0, 1 << 0, 1 << 1 } }, // P08
+
+  { 1, 1, { 0, 1 << 7, 1 << 6 } }, // P09
+  { 1, 1, { 0, 1 << 5, 1 << 4 } }, // P10
+  { 1, 1, { 0, 1 << 3, 1 << 2 } }, // P11
+  { 1, 1, { 0, 1 << 1, 1 << 0 } }, // P12
+  { 1, 0, { 0, 1 << 6, 1 << 7 } }, // P13
+  { 1, 0, { 0, 1 << 4, 1 << 5 } }, // P14
+  { 1, 0, { 0, 1 << 2, 1 << 3 } }, // P15
+
+  { 0, 1, { 0, 1 << 7, 1 << 6 } }, // P16
+  { 0, 1, { 0, 1 << 5, 1 << 4 } }, // P17
+  { 0, 1, { 0, 1 << 3, 1 << 2 } }, // P18
+  { 0, 1, { 0, 1 << 1, 1 << 0 } }, // P19
+  { 0, 0, { 0, 1 << 6, 1 << 7 } }, // P20
+  { 0, 0, { 0, 1 << 4, 1 << 5 } }, // P21
+  { 0, 0, { 0, 1 << 2, 1 << 3 } }, // P22
+  { 0, 0, { 0, 1 << 0, 1 << 1 } }, // P23
+
+  { 1, 1, { 0, 1 << 7, 1 << 6 } }, // P24
+  { 1, 1, { 0, 1 << 5, 1 << 4 } }, // P25
+  { 1, 1, { 0, 1 << 3, 1 << 2 } }, // P26
+  { 1, 1, { 0, 1 << 1, 1 << 0 } }, // P27
+  { 1, 0, { 0, 1 << 6, 1 << 7 } }, // P28
+  { 1, 0, { 0, 1 << 4, 1 << 5 } }, // P29
+  { 1, 0, { 0, 1 << 2, 1 << 3 } }, // P30
+
+  { 0, 1, { 0, 1 << 7, 1 << 6 } }, // P31
+  { 0, 1, { 0, 1 << 5, 1 << 4 } }, // P32
+  { 0, 1, { 0, 1 << 3, 1 << 2 } }, // P33
+  { 0, 1, { 0, 1 << 1, 1 << 0 } }, // P34
+  { 0, 0, { 0, 1 << 6, 1 << 7 } }, // P35
+  { 0, 0, { 0, 1 << 4, 1 << 5 } }, // P36
+  { 0, 0, { 0, 1 << 2, 1 << 3 } }, // P37
+  { 0, 0, { 0, 1 << 0, 1 << 1 } }, // P38
+
+  { 1, 1, { 0, 1 << 7, 1 << 6 } }, // P39
+  { 1, 1, { 0, 1 << 5, 1 << 4 } }, // P40
+  { 1, 1, { 0, 1 << 3, 1 << 2 } }, // P41
+  { 1, 1, { 0, 1 << 1, 1 << 0 } }, // P42
+  { 1, 0, { 0, 1 << 6, 1 << 7 } }, // P43
+  { 1, 0, { 0, 1 << 4, 1 << 5 } }, // P44
+  { 1, 0, { 0, 1 << 2, 1 << 3 } }, // P45
+};
+// @format:on
+
+/*
+ * netname
+ * 44,45,43,41,42;29,30,28,26,27;14,15,13,11,12
+ * 39,40,38,36,37;24,25,23,21,22;09,10,08,06,07
+ * 34,35,33,31,32;19,20,18,16,17;04,05,03,01,02
+ */
+static void apply_allpads_config(allpads_t * pads, uint8_t port[6][2])
+{
+  memset(port, 0, 12);
+
+#define PADCFG(num, cfg) port[nm[num].addr][nm[num].port] |= nm[num].mask[cfg]
+
+  PADCFG(44, pads->row[0].a_top);
+  PADCFG(45, pads->row[0].a_lft);
+  PADCFG(43, pads->row[0].a_mid);
+  PADCFG(41, pads->row[0].a_rgt);
+  PADCFG(42, pads->row[0].a_bot);
+
+  PADCFG(29, pads->row[0].b_top);
+  PADCFG(30, pads->row[0].b_lft);
+  PADCFG(28, pads->row[0].b_mid);
+  PADCFG(26, pads->row[0].b_rgt);
+  PADCFG(27, pads->row[0].b_bot);
+
+  PADCFG(14, pads->row[0].c_top);
+  PADCFG(15, pads->row[0].c_lft);
+  PADCFG(13, pads->row[0].c_mid);
+  PADCFG(11, pads->row[0].c_rgt);
+  PADCFG(12, pads->row[0].c_bot);
+
+  PADCFG(39, pads->row[1].a_top);
+  PADCFG(40, pads->row[1].a_lft);
+  PADCFG(38, pads->row[1].a_mid);
+  PADCFG(36, pads->row[1].a_rgt);
+  PADCFG(37, pads->row[1].a_bot);
+
+  PADCFG(24, pads->row[1].b_top);
+  PADCFG(25, pads->row[1].b_lft);
+  PADCFG(23, pads->row[1].b_mid);
+  PADCFG(21, pads->row[1].b_rgt);
+  PADCFG(22, pads->row[1].b_bot);
+
+  PADCFG( 9, pads->row[1].c_top);
+  PADCFG(10, pads->row[1].c_lft);
+  PADCFG( 8, pads->row[1].c_mid);
+  PADCFG( 6, pads->row[1].c_rgt);
+  PADCFG( 7, pads->row[1].c_bot);
+
+  PADCFG(34, pads->row[2].a_top);
+  PADCFG(35, pads->row[2].a_lft);
+  PADCFG(33, pads->row[2].a_mid);
+  PADCFG(31, pads->row[2].a_rgt);
+  PADCFG(32, pads->row[2].a_bot);
+
+  PADCFG(19, pads->row[2].b_top);
+  PADCFG(20, pads->row[2].b_lft);
+  PADCFG(18, pads->row[2].b_mid);
+  PADCFG(16, pads->row[2].b_rgt);
+  PADCFG(17, pads->row[2].b_bot);
+
+  PADCFG( 4, pads->row[2].c_top);
+  PADCFG( 5, pads->row[2].c_lft);
+  PADCFG( 3, pads->row[2].c_mid);
+  PADCFG( 1, pads->row[2].c_rgt);
+  PADCFG( 2, pads->row[2].c_bot);
+
+#undef PADCFG
+}
+
+static void test(int x)
+{
+  netmap_t nm[1] = { x, x, x, x };
+}
+
 void StartProfileTask(void const *argument)
 {
   HAL_StatusTypeDef status;
@@ -311,97 +452,6 @@ entry_point:
     }
   } */
 }
-
-#if 0
-void StartProfileTask(void const * argument)
-{
-	vTaskDelay(100);
-
-	load_profiles();
-
-entry_point:
-	CURR_PROFILE = NEXT_PROFILE;
-
-	if (CURR_PROFILE.pgcfg_a[0] == 0xdeadbeef)
-	{
-		goto profile_blink;
-	}
-
-	for (;;)
-	{
-		uint32_t dur;
-
-		update_all_switches(CURR_PROFILE.pgcfg_a);
-		dur = CURR_PROFILE.duration_a_sec * 1000;
-		if (dur == 0) dur = portMAX_DELAY;
-
-		if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, dur))
-		{
-			goto entry_point;
-		}
-
-		update_all_switches(CURR_PROFILE.pgcfg_b);
-		dur = CURR_PROFILE.duration_b_sec * 1000;
-		if (dur == 0) dur = portMAX_DELAY;
-
-		if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, dur))
-		{
-			goto entry_point;
-		}
-	}
-
-profile_blink:
-	for (int port = 0; port < 4; port++)
-	{
-		for (int pin = 0; pin < 9; pin++)
-		{
-			update_switch(port, pin, GPIO_PIN_RESET, GPIO_PIN_RESET);
-		}
-	}
-
-	for (int port = 0; port < 4; port++)
-	{
-		for (int pin = 0; pin < 9; pin++)
-		{
-			update_switch(port, pin, GPIO_PIN_RESET, GPIO_PIN_SET);
-			// vTaskDelay(100);
-			if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, 100))
-			{
-				goto entry_point;
-			}
-		}
-	}
-
-	for (int port = 0; port < 4; port++)
-	{
-		for (int pin = 0; pin < 9; pin++)
-		{
-			update_switch(port, pin, GPIO_PIN_SET, GPIO_PIN_RESET);
-			// vTaskDelay(100);
-			if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, 100))
-			{
-				goto entry_point;
-			}
-		}
-	}
-
-	for (int port = 0; port < 4; port++)
-	{
-		for (int pin = 0; pin < 9; pin++)
-		{
-			update_switch(port, pin, GPIO_PIN_RESET, GPIO_PIN_RESET);
-			// vTaskDelay(100);
-			if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, 100))
-			{
-				goto entry_point;
-			}
-		}
-	}
-
-	NEXT_PROFILE = STOP_PROFILE;
-	goto entry_point;
-}
-#endif
 
 // STM32F405 Flash memory is organized in sectors of varying sizes
 // STM32F405 has 1MB Flash (0x100000 bytes)
