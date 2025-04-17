@@ -381,6 +381,52 @@ CliCommandBinding cli_cmd_reboot_binding =
   NULL,
   CLI_CMD_Reboot };
 
+/*
+ * Active Low (There is an ON label on switch)
+ */
+static void CLI_CMD_Switch(EmbeddedCli *cli, char *args, void *context)
+{
+  printf("SW1: %s, SW2: %s, SW3: %s, SW4: %s, SW5: %s%s",
+      (HAL_GPIO_ReadPin(SW1_GPIO_Port, SW1_Pin) == GPIO_PIN_SET) ? "off" : "on",
+      (HAL_GPIO_ReadPin(SW2_GPIO_Port, SW2_Pin) == GPIO_PIN_SET) ? "off" : "on",
+      (HAL_GPIO_ReadPin(SW3_GPIO_Port, SW3_Pin) == GPIO_PIN_SET) ? "off" : "on",
+      (HAL_GPIO_ReadPin(SW4_GPIO_Port, SW4_Pin) == GPIO_PIN_SET) ? "off" : "on",
+      (HAL_GPIO_ReadPin(SW5_GPIO_Port, SW5_Pin) == GPIO_PIN_SET) ? "off" : "on",
+      "\r\n");
+}
+
+CliCommandBinding cli_cmd_switch_binding =
+{ "switch",
+  "show sw1 - sw5 on/off states (for testing purposes).",
+  false,
+  NULL,
+  CLI_CMD_Switch };
+
+static void CLI_CMD_LED(EmbeddedCli *cli, char *args, void *context)
+{
+  /*
+  HAL_GPIO_TogglePin(LEDC_GPIO_Port, LEDC_Pin);
+  vTaskDelay(500);
+  HAL_GPIO_TogglePin(LEDC_GPIO_Port, LEDC_Pin);
+  vTaskDelay(500);
+  HAL_GPIO_TogglePin(LEDC_GPIO_Port, LEDC_Pin);
+  vTaskDelay(500);
+  HAL_GPIO_TogglePin(LEDC_GPIO_Port, LEDC_Pin);
+  vTaskDelay(500);
+  HAL_GPIO_TogglePin(LEDC_GPIO_Port, LEDC_Pin);
+  vTaskDelay(500);
+  HAL_GPIO_TogglePin(LEDC_GPIO_Port, LEDC_Pin);
+  vTaskDelay(500);
+  */
+}
+
+CliCommandBinding cli_cmd_led_binding =
+{ "led",
+  "blink led (for testing purposes).",
+  false,
+  NULL,
+  CLI_CMD_LED };
+
 void StartUxTask(void const *argument)
 {
   /* USER CODE BEGIN 5 */
@@ -391,6 +437,8 @@ void StartUxTask(void const *argument)
   embeddedCliAddBinding(cli, cli_cmd_list_binding);
   embeddedCliAddBinding(cli, cli_cmd_define_binding);
   embeddedCliAddBinding(cli, cli_cmd_reboot_binding);
+  embeddedCliAddBinding(cli, cli_cmd_switch_binding);
+  embeddedCliAddBinding(cli, cli_cmd_led_binding);
 
   vTaskDelay(500);
 
