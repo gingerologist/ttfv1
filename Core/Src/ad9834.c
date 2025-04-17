@@ -7,6 +7,7 @@
 /*
  * This file is not used, yet.
  */
+#if 0
 
 // Pin definitions
 #define AD9834_RESET_PIN  GPIO_PIN_6
@@ -238,4 +239,4 @@ void MX_SPI2_Init(void)
 //    }
 //}
 
-
+#endif

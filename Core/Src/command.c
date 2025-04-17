@@ -502,12 +502,14 @@ void StartUxTask(void const *argument)
       printf("SW5 ON, do profile %d\r\n", bits);
 
       do_profile(bits);
+      HAL_GPIO_WritePin(LEDC_GPIO_Port, LEDC_Pin, GPIO_PIN_SET);
     }
     else
     {
       printf("SW5 OFF, do no profile\r\n");
 
       do_profile(-1);
+      HAL_GPIO_WritePin(LEDC_GPIO_Port, LEDC_Pin, GPIO_PIN_RESET);
     }
 
     // wait 10ms
