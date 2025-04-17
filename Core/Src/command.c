@@ -472,10 +472,42 @@ void StartUxTask(void const *argument)
     }
 #endif
 
+    // All switches are actively low. That is, when switch to ON, a falling edge
+    // is detected.
     int edge = GPIO_EdgeDetect(&sw5_handle, HAL_GPIO_ReadPin(SW5_GPIO_Port, SW5_Pin));
-    if (edge)
+    if (edge < 0)
     {
-      printf("%s edge detected on sw5\r\n", edge > 0 ? "rising" : "falling");
+      unsigned int bits = 0;
+
+      if (GPIO_PIN_RESET == HAL_GPIO_ReadPin(SW1_GPIO_Port, SW1_Pin))
+      {
+        bits |= 1;
+      }
+
+      if (GPIO_PIN_RESET == HAL_GPIO_ReadPin(SW2_GPIO_Port, SW2_Pin))
+      {
+        bits |= 2;
+      }
+
+      if (GPIO_PIN_RESET == HAL_GPIO_ReadPin(SW3_GPIO_Port, SW3_Pin))
+      {
+        bits |= 4;
+      }
+
+      if (GPIO_PIN_RESET == HAL_GPIO_ReadPin(SW4_GPIO_Port, SW4_Pin))
+      {
+        bits |= 8;
+      }
+
+      printf("SW5 ON, do profile %d\r\n", bits);
+
+      do_profile(bits);
+    }
+    else
+    {
+      printf("SW5 OFF, do no profile\r\n");
+
+      do_profile(-1);
     }
 
     // wait 10ms

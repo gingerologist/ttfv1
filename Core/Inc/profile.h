@@ -77,7 +77,7 @@ _Static_assert(sizeof(profile_t) == 40, "profile_t size not 40");
 
 void print_profile(int index);
 
-void do_profile_by_key(int profile_index);
+void do_profile(int index);
 
 // profile_t get_profile(int index);
 

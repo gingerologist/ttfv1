@@ -56,6 +56,7 @@ void Error_Handler(void);
 /* USER CODE BEGIN EFP */
 void print_line(const char* str);
 void DDS_Start(void);
+void dac_output_in_mv(int dac_in_mv);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

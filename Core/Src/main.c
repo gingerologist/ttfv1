@@ -566,6 +566,12 @@ void DDS_Start(void)
   }
 }
 
+void dac_output_in_mv(int dac_in_mv)
+{
+  uint32_t dac_value = (dac_in_mv * 4095) / 3300; /* Convert 700mV to DAC value */
+  HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, dac_value);
+}
+
 void print_tca9555(void)
 {
   uint8_t value = 0;
@@ -658,6 +664,8 @@ void print_tca9555(void)
   }
 }
 
+#if 0
+
 typedef enum {
     SW_RELEASED,
     SW_DEBOUNCING_DOWN,
@@ -744,6 +752,7 @@ static uint8_t SW5_EdgeDetect(void)
 
     return return_edge;
 }
+#endif
 
 // Example usage in a polling loop
 //void TaskLoop(void)

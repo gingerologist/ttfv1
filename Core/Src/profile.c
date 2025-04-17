@@ -13,6 +13,7 @@
 #include "cmsis_os.h"
 #include "main.h"
 #include "profile.h"
+#include "tca9555.h"
 
 #define STOP_PROFILE            profile[16]
 #define DDBF_PROFILE            profile[17] // deadbeef, special profile, not used
@@ -21,7 +22,7 @@
 
 extern osMessageQId requestQueueHandle;
 
-static profile_t profile_v2[20] =
+static profile_t profile[20] =
 {
   { },  // 0
   { },  // 1
@@ -55,10 +56,6 @@ extern CRC_HandleTypeDef hcrc;
 
 static HAL_StatusTypeDef save_profiles(void);
 static HAL_StatusTypeDef load_profiles(void);
-
-
-
-
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -123,35 +120,35 @@ void print_profile(int i)
     return;
   }
 
-  print_allpads_str(&profile_v2[i].a.pads, str);
+  print_allpads_str(&profile[i].a.pads, str);
   printf("Profile #%02d phase a: %s in %d seconds at %d volts\r\n", i, str,
-      profile_v2[i].a.duration, profile_v2[i].a.level);
+      profile[i].a.duration, profile[i].a.level);
 
-  print_allpads_str(&profile_v2[i].b.pads, str);
+  print_allpads_str(&profile[i].b.pads, str);
   printf("            phase b: %s in %d seconds at %d volts\r\n", str,
-      profile_v2[i].b.duration, profile_v2[i].b.level);
+      profile[i].b.duration, profile[i].b.level);
 }
 
 profile_t get_profile(int index)
 {
-  profile_t profile = {0};
+  profile_t prfl = {0};
 
 	if (index > -1 && index < 16)
 	{
-		return profile_v2[index];
+		return profile[index];
 	}
-	return profile;
+	return prfl;
 }
 
 void set_profile_phase(int profile_index, int phase_index, phase_t *phase)
 {
   if (phase_index == 0)
   {
-    profile_v2[profile_index].a = *phase;
+    profile[profile_index].a = *phase;
   }
   else
   {
-    profile_v2[profile_index].b = *phase;
+    profile[profile_index].b = *phase;
   }
 
   save_profiles();
@@ -237,7 +234,7 @@ typedef struct
 /*
  * @brief apply pad configuration to ports
  */
-static void apply_allpads_config(allpads_t * pads, uint8_t port[6][2])
+static void padscfg_to_portcfg(allpads_t * pads, uint8_t port[6][2])
 {
   // @format:off
   static const netmap_t nm[46] =
@@ -365,9 +362,50 @@ static void apply_allpads_config(allpads_t * pads, uint8_t port[6][2])
 #undef PADCFG
 }
 
+static void apply_padscfg(allpads_t * pads)
+{
+  uint8_t port[6][2] = {0};
+  padscfg_to_portcfg(pads, port);
+  TCA9555_UpdateOutput(port);
+}
+
+void do_profile(int index)
+{
+  if (index >= 0 && index < 16)
+  {
+    if (pdTRUE != xQueueSend(requestQueueHandle, &profile[index], 0))
+    {
+      printf("error: queue full\r\n");
+    }
+  }
+  else
+  {
+    if (pdTRUE != xQueueSend(requestQueueHandle, &STOP_PROFILE, 0))
+    {
+      printf("error: queue full\r\n");
+    }
+  }
+}
+
+int level_to_dac_in_mv(int level)
+{
+  if (level >= 100)
+  {
+    return 0;
+  }
+
+  if (level <= 0)
+  {
+    return 700;
+  }
+
+  return (100 - level) * 7;
+}
+
 void StartProfileTask(void const *argument)
 {
   HAL_StatusTypeDef status;
+  int dac_in_mv;
 
   vTaskDelay(100);
 
@@ -383,9 +421,36 @@ void StartProfileTask(void const *argument)
 
   DDS_Start();
 
+entry_point:
+  CURR_PROFILE= NEXT_PROFILE;
+
   for (;;)
   {
-    vTaskDelay(1000);
+    uint32_t dur;
+
+    apply_padscfg(&CURR_PROFILE.a.pads);
+    dac_in_mv = level_to_dac_in_mv(CURR_PROFILE.a.level);
+    dac_output_in_mv(dac_in_mv);
+    dur = CURR_PROFILE.a.duration * 1000;
+    if (dur == 0)
+      dur = portMAX_DELAY;
+
+    if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, dur))
+    {
+      goto entry_point;
+    }
+
+    apply_padscfg(&CURR_PROFILE.b.pads);
+    dac_in_mv = level_to_dac_in_mv(CURR_PROFILE.b.level);
+    dac_output_in_mv(level_to_dac_in_mv(CURR_PROFILE.b.level));
+    dur = CURR_PROFILE.b.duration *1000;
+    if (dur == 0)
+      dur = portMAX_DELAY;
+
+    if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, dur))
+    {
+      goto entry_point;
+    }
   }
 /*
 entry_point:
@@ -467,10 +532,10 @@ static HAL_StatusTypeDef erase_sector_3(void)
 static HAL_StatusTypeDef save_profiles(void)
 {
   HAL_StatusTypeDef status;
-  uint64_t *dword = (uint64_t*) profile_v2;
+  uint64_t *dword = (uint64_t*) profile;
 
   // calculate crc
-  uint32_t crc = HAL_CRC_Calculate(&hcrc, (uint32_t*) profile_v2,
+  uint32_t crc = HAL_CRC_Calculate(&hcrc, (uint32_t*) profile,
       SIZE_OF_PROFILES_IN_WORD);
 
   /* Unlock the Flash to enable the flash control register access */
@@ -535,7 +600,7 @@ static HAL_StatusTypeDef load_profiles(void)
   {
     for (int i = 0; i < NUM_OF_PROFILES; i++)
     {
-      profile_v2[i] = _profile[i];
+      profile[i] = _profile[i];
     }
 
     return HAL_OK;
