@@ -14,59 +14,14 @@
 #include "main.h"
 #include "profile.h"
 
+#define STOP_PROFILE            profile[16]
+#define DDBF_PROFILE            profile[17] // deadbeef, special profile, not used
+#define CURR_PROFILE            profile[18]
+#define NEXT_PROFILE            profile[19]
+
 extern osMessageQId requestQueueHandle;
 
-#if 0
-
-/* Private includes ----------------------------------------------------------*/
-/* Private typedef -----------------------------------------------------------*/
-typedef struct {
-	char buf[10];
-} pgcfg_strbuf_t;
-
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-// see profile initializer below
-#define STOP_PROFILE						profile[9]
-#define DDBF_PROFILE						profile[10]
-#define CURR_PROFILE						profile[11]
-#define NEXT_PROFILE						profile[12]
-
-/* Private variables ---------------------------------------------------------*/
-static GPIO_TypeDef* s_port[4][9] =
-{
-	{ A1S_GPIO_Port, A2S_GPIO_Port, A3S_GPIO_Port, A4S_GPIO_Port, A5S_GPIO_Port, A6S_GPIO_Port, A7S_GPIO_Port, A8S_GPIO_Port, A9S_GPIO_Port },
-	{ B1S_GPIO_Port, B2S_GPIO_Port, B3S_GPIO_Port, B4S_GPIO_Port, B5S_GPIO_Port, B6S_GPIO_Port, B7S_GPIO_Port, B8S_GPIO_Port, B9S_GPIO_Port },
-	{ C1S_GPIO_Port, C2S_GPIO_Port, C3S_GPIO_Port, C4S_GPIO_Port, C5S_GPIO_Port, C6S_GPIO_Port, C7S_GPIO_Port, C8S_GPIO_Port, C9S_GPIO_Port },
-	{ D1S_GPIO_Port, D2S_GPIO_Port, D3S_GPIO_Port, D4S_GPIO_Port, D5S_GPIO_Port, D6S_GPIO_Port, D7S_GPIO_Port, D8S_GPIO_Port, D9S_GPIO_Port },
-};
-
-static GPIO_TypeDef* c_port[4][9] =
-{
-	{ A1C_GPIO_Port, A2C_GPIO_Port, A3C_GPIO_Port, A4C_GPIO_Port, A5C_GPIO_Port, A6C_GPIO_Port, A7C_GPIO_Port, A8C_GPIO_Port, A9C_GPIO_Port },
-	{ B1C_GPIO_Port, B2C_GPIO_Port, B3C_GPIO_Port, B4C_GPIO_Port, B5C_GPIO_Port, B6C_GPIO_Port, B7C_GPIO_Port, B8C_GPIO_Port, B9C_GPIO_Port },
-	{ C1C_GPIO_Port, C2C_GPIO_Port, C3C_GPIO_Port, C4C_GPIO_Port, C5C_GPIO_Port, C6C_GPIO_Port, C7C_GPIO_Port, C8C_GPIO_Port, C9C_GPIO_Port },
-	{ D1C_GPIO_Port, D2C_GPIO_Port, D3C_GPIO_Port, D4C_GPIO_Port, D5C_GPIO_Port, D6C_GPIO_Port, D7C_GPIO_Port, D8C_GPIO_Port, D9C_GPIO_Port },
-};
-
-static const uint16_t s_pin[4][9] =
-{
-	{ A1S_Pin, A2S_Pin, A3S_Pin, A4S_Pin, A5S_Pin, A6S_Pin, A7S_Pin, A8S_Pin, A9S_Pin },
-	{ B1S_Pin, B2S_Pin, B3S_Pin, B4S_Pin, B5S_Pin, B6S_Pin, B7S_Pin, B8S_Pin, B9S_Pin },
-	{ C1S_Pin, C2S_Pin, C3S_Pin, C4S_Pin, C5S_Pin, C6S_Pin, C7S_Pin, C8S_Pin, C9S_Pin },
-	{ D1S_Pin, D2S_Pin, D3S_Pin, D4S_Pin, D5S_Pin, D6S_Pin, D7S_Pin, D8S_Pin, D9S_Pin },
-};
-
-static const uint16_t c_pin[4][9] =
-{
-	{ A1C_Pin, A2C_Pin, A3C_Pin, A4C_Pin, A5C_Pin, A6C_Pin, A7C_Pin, A8C_Pin, A9C_Pin },
-	{ B1C_Pin, B2C_Pin, B3C_Pin, B4C_Pin, B5C_Pin, B6C_Pin, B7C_Pin, B8C_Pin, B9C_Pin },
-	{ C1C_Pin, C2C_Pin, C3C_Pin, C4C_Pin, C5C_Pin, C6C_Pin, C7C_Pin, C8C_Pin, C9C_Pin },
-	{ D1C_Pin, D2C_Pin, D3C_Pin, D4C_Pin, D5C_Pin, D6C_Pin, D7C_Pin, D8C_Pin, D9C_Pin },
-};
-#endif
-
-static profile_t profile_v2[19] =
+static profile_t profile_v2[20] =
 {
   { },  // 0
   { },  // 1
@@ -84,9 +39,16 @@ static profile_t profile_v2[19] =
   { },  // 13
   { },  // 14
   { },  // 15
-  { },  // 16, all zero (used for stop?)
-  { },  // 17, current
-  { },  // 18, next
+  { },  // 16, stop
+  { },  // 17, deadbeef is not used in this application
+        //     it is used in original multipads project for implement the blink function.
+        //     it is designed to be a special profile responds to STOP key.
+        //     if there are profile key already pressed, aka, the switches are working, then
+        //     pressing STOP key will stop action.
+        //     if there is no profile key already pressed, pressing STOP key will
+        //     trigger blink, in which case deadbeef profile is sent.
+  { },  // 18, current
+  { },  // 19, next
     };
 
 extern CRC_HandleTypeDef hcrc;

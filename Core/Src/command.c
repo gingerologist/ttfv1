@@ -18,6 +18,7 @@
 #include "command.h"
 #include "main.h"
 #include "profile.h"
+#include "edge_detect.h"
 
 /**
  * SOMEDAY https://github.com/MaJerle/stm32-usart-uart-dma-rx-tx
@@ -429,6 +430,12 @@ CliCommandBinding cli_cmd_led_binding =
 
 void StartUxTask(void const *argument)
 {
+  static SW_HandleTypeDef sw5_handle = {
+      .status = SW_RELEASED,
+      .count = 0,
+      .max_count = 3  // Default debounce
+  };
+
   /* USER CODE BEGIN 5 */
   cli_config = embeddedCliDefaultConfig();
   cli = embeddedCliNew(cli_config);
@@ -464,6 +471,13 @@ void StartUxTask(void const *argument)
       do_profile_by_key(key);
     }
 #endif
+
+    int edge = GPIO_EdgeDetect(&sw5_handle, HAL_GPIO_ReadPin(SW5_GPIO_Port, SW5_Pin));
+    if (edge)
+    {
+      printf("%s edge detected on sw5\r\n", edge > 0 ? "rising" : "falling");
+    }
+
     // wait 10ms
     vTaskDelay(10);
   }

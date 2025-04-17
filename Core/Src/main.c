@@ -657,6 +657,113 @@ void print_tca9555(void)
     }
   }
 }
+
+typedef enum {
+    SW_RELEASED,
+    SW_DEBOUNCING_DOWN,
+    SW_PRESSED,
+    SW_DEBOUNCING_UP
+} SW_Status;
+
+typedef struct {
+    SW_Status status;
+    uint8_t count;
+    uint8_t edge;  // 0 = no edge, 1 = down edge, 2 = up edge
+} SW_HandleTypeDef;
+
+static SW_HandleTypeDef sw5_handle = {
+    .status = SW_RELEASED,
+    .count = 0,
+    .edge = 0
+};
+
+/* Returns:
+ * 0 if no edge detected
+ * 1 if key down edge detected
+ * 2 if key up edge detected
+ */
+static uint8_t SW5_EdgeDetect(void)
+{
+    GPIO_PinState current_state = HAL_GPIO_ReadPin(SW5_GPIO_Port, SW5_Pin);
+    uint8_t return_edge = 0;
+
+    switch (sw5_handle.status)
+    {
+    case SW_RELEASED:
+        if (current_state == GPIO_PIN_RESET)  // Assuming active low
+        {
+            sw5_handle.status = SW_DEBOUNCING_DOWN;
+            sw5_handle.count = 1;
+        }
+        break;
+
+    case SW_DEBOUNCING_DOWN:
+        if (current_state == GPIO_PIN_RESET)
+        {
+            sw5_handle.count++;
+            if (sw5_handle.count > 3)  // Debounce threshold
+            {
+                sw5_handle.status = SW_PRESSED;
+                sw5_handle.count = 0;
+                return_edge = 1;  // Key down edge
+            }
+        }
+        else
+        {
+            sw5_handle.status = SW_RELEASED;
+            sw5_handle.count = 0;
+        }
+        break;
+
+    case SW_PRESSED:
+        if (current_state == GPIO_PIN_SET)  // Released
+        {
+            sw5_handle.status = SW_DEBOUNCING_UP;
+            sw5_handle.count = 1;
+        }
+        break;
+
+    case SW_DEBOUNCING_UP:
+        if (current_state == GPIO_PIN_SET)
+        {
+            sw5_handle.count++;
+            if (sw5_handle.count > 3)  // Debounce threshold
+            {
+                sw5_handle.status = SW_RELEASED;
+                sw5_handle.count = 0;
+                return_edge = 2;  // Key up edge
+            }
+        }
+        else
+        {
+            sw5_handle.status = SW_PRESSED;
+            sw5_handle.count = 0;
+        }
+        break;
+    }
+
+    return return_edge;
+}
+
+// Example usage in a polling loop
+//void TaskLoop(void)
+//{
+//    while (1)
+//    {
+//        uint8_t sw_edge = SW5_EdgeDetect();
+//
+//        if (sw_edge == 1)  // Key down
+//        {
+//            // Do something on key down
+//        }
+//        else if (sw_edge == 2)  // Key up
+//        {
+//            // Do something on key up
+//        }
+//
+//        // Other tasks...
+//    }
+//}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartProfileTask */
