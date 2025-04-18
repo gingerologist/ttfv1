@@ -66,62 +66,34 @@ CliCommandBinding cli_cmd_list_binding =
   NULL,
   CLI_CMD_List };
 
-#if 0
-static bool parse_config(const char *str, uint32_t *config)
-{
-  if (!cfg_str_is_valid(str))
-  {
-    return false;
-  }
-
-  if (config != NULL)
-  {
-    *config = 0;
-    for (int i = 0; i < 9; i++)
-    {
-      switch (str[i])
-      {
-        case '1':
-          *config |= 0x01 << (i * 2);
-          break;
-        case '2':
-          *config |= 0x02 << (i * 2);
-          break;
-        default:
-          break;
-      }
-    }
-  }
-
-  return true;
-}
-#endif
-
-/*
- * Parses a string to get a zero-based index (0-15)
- * Valid inputs: "1" through "16"
- * Returns: true if valid, false otherwise
- * *index is zero-based (0-15)
+/**
+ * @brief  Parses a string containing a number from "0" to "15" and converts it to an integer index.
+ * @param  str: Pointer to the input string to be parsed
+ * @param  index: Pointer to store the resulting integer index (0-15)
+ * @retval true if parsing was successful (input was "0" to "15"), false otherwise
  */
 static bool parse_profile_index(const char *str, int *index)
 {
   size_t len = strlen(str);
-
-  if (len == 1 && str[0] >= '1' && str[0] <= '9')
+  if (len == 1 && str[0] >= '0' && str[0] <= '9')
   {
-    *index = str[0] - '1';  // Convert '1'-'9' to 0-8
+    *index = str[0] - '0';  // Convert '0'-'9' to 0-9
     return true;
   }
-
-  if (len == 2 && str[0] == '1' && str[1] >= '0' && str[1] <= '6')
+  if (len == 2 && str[0] == '1' && str[1] >= '0' && str[1] <= '5')
   {
-    *index = 9 + (str[1] - '0');  // Convert "10"-"16" to 9-15
+    *index = 10 + (str[1] - '0');  // Convert "10"-"15" to 10-15
     return true;
   }
-
   return false;
 }
 
+/**
+* @brief  Parses a single character string to determine the phase index.
+* @param  str: Pointer to the input string to be parsed
+* @param  phase: Pointer to store the resulting phase index (0 for 'a', 1 for 'b')
+* @retval true if parsing was successful (input was 'a' or 'b'), false otherwise
+*/
 static bool parse_phase_index(const char *str, int *phase)
 {
   size_t len = strlen(str);
@@ -146,9 +118,19 @@ static bool parse_phase_index(const char *str, int *phase)
   return false;
 }
 
-/*
- * 11111,11111,11111;22222,22222,22222;00000,00000,00000
- */
+/**
+* @brief  Parses a string containing pad configuration data and populates the padscfg structure.
+* @param  str: Pointer to the input string containing pad configuration values
+*              Format must be exactly 53 characters long with specific format:
+*              - Values must be '0', '1', or '2'
+*              - Commas at positions divisible by 6 (except when divisible by 18)
+*              - Semicolons at positions divisible by 18
+* @param  padscfg: Pointer to allpads_t structure to store the parsed configuration values
+* @retval true if parsing was successful (valid format and values), false otherwise
+*
+* @note   The function maps specific string positions to corresponding pad configuration fields
+*         in a row-based structure for different phases (a, b, c) and positions (top, left, mid, right, bottom).
+*/
 static bool parse_phase_padscfg(const char *str, allpads_t* padscfg)
 {
   size_t len = strlen(str);
@@ -246,6 +228,17 @@ static bool parse_phase_padscfg(const char *str, allpads_t* padscfg)
   return true;
 }
 
+/**
+* @brief  Parses a string to extract a phase duration value.
+* @param  p: Pointer to the input string to be parsed
+* @param  duration: Pointer to store the resulting duration value
+* @retval true if parsing was successful, false otherwise
+*
+* @note   The function validates that:
+*         - Input pointers are not NULL
+*         - Input string contains only a valid integer
+*         - The value is within the allowed range (0-3600)
+*/
 static bool parse_phase_duration(const char *p, int *duration)
 {
   char *endptr;
@@ -270,6 +263,17 @@ static bool parse_phase_duration(const char *p, int *duration)
   return true;
 }
 
+/**
+* @brief  Parses a string to extract a phase level value.
+* @param  p: Pointer to the input string to be parsed
+* @param  level: Pointer to store the resulting level value
+* @retval true if parsing was successful, false otherwise
+*
+* @note   The function validates that:
+*         - Input pointers are not NULL
+*         - Input string contains only a valid integer
+*         - The value is within the allowed range (0-100)
+*/
 static bool parse_phase_level(const char *p, int *level)
 {
   char *endptr;
@@ -298,11 +302,11 @@ static bool parse_phase_level(const char *p, int *level)
  * example:
  *  define 1 a 11111,11111,11111;22222,22222,22222;00000,00000,00000 33 100
  *
- *  where 1 1-16 [1-based index]
- *        a a or b
- *
- *        33
- *        100 is level
+ *  where 1     0-15 [1-based index]
+ *        a     a or b
+ *        11111,11111,11111;22222,22222,22222;00000,00000,00000
+ *        33    duration in seconds
+ *        100   voltage level
  */
 static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context)
 {
@@ -363,9 +367,8 @@ static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context)
 CliCommandBinding cli_cmd_define_binding =
 { "define",
   "Define a profile. Example:\r\n"
-  "        > define 9a 222222222 111111111 222222222 111111111 3\r\n"
-  "        > define 9b 111111111 222222222 111111111 222222222 3\r\n"
-  "        > see more detail in manual.",
+  "        > define 0 a 11111,11111,11111;22222,22222,22222;00000,00000,00000 30 100\r\n"
+  "        > define 15 b 11111,11111,11111;22222,22222,22222;00000,00000,00000 3600 10\r\n",
   true,
   NULL,
   CLI_CMD_Define };
@@ -405,7 +408,6 @@ CliCommandBinding cli_cmd_switch_binding =
 
 static void CLI_CMD_LED(EmbeddedCli *cli, char *args, void *context)
 {
-  /*
   HAL_GPIO_TogglePin(LEDC_GPIO_Port, LEDC_Pin);
   vTaskDelay(500);
   HAL_GPIO_TogglePin(LEDC_GPIO_Port, LEDC_Pin);
@@ -418,7 +420,6 @@ static void CLI_CMD_LED(EmbeddedCli *cli, char *args, void *context)
   vTaskDelay(500);
   HAL_GPIO_TogglePin(LEDC_GPIO_Port, LEDC_Pin);
   vTaskDelay(500);
-  */
 }
 
 CliCommandBinding cli_cmd_led_binding =
@@ -445,7 +446,7 @@ void StartUxTask(void const *argument)
   embeddedCliAddBinding(cli, cli_cmd_define_binding);
   embeddedCliAddBinding(cli, cli_cmd_reboot_binding);
   embeddedCliAddBinding(cli, cli_cmd_switch_binding);
-  embeddedCliAddBinding(cli, cli_cmd_led_binding);
+  // embeddedCliAddBinding(cli, cli_cmd_led_binding);
 
   vTaskDelay(500);
 
@@ -463,14 +464,6 @@ void StartUxTask(void const *argument)
       embeddedCliReceiveChar(cli, c);
       embeddedCliProcess(cli);
     }
-
-#if 0
-    int key = detect_single_keydown();
-    if (key >= 0)
-    {
-      do_profile_by_key(key);
-    }
-#endif
 
     // All switches are actively low. That is, when switch to ON, a falling edge
     // is detected.
