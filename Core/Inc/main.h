@@ -56,7 +56,7 @@ void Error_Handler(void);
 /* USER CODE BEGIN EFP */
 void DDS_Start(void);
 void DAC_Start(void);
-void DAC_Update(int mv);
+void DAC_Update(uint32_t mv);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

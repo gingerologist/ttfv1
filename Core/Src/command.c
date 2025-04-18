@@ -139,6 +139,10 @@ static bool parse_phase_padscfg(const char *str, allpads_t* padscfg)
     return false;
   }
 
+  padscfg->row[0].word = 0;
+  padscfg->row[1].word = 0;
+  padscfg->row[2].word = 0;
+
   for (int i = 0; i < 53; i++)
   {
     if ((i + 1) % 6 == 0)
@@ -158,8 +162,7 @@ static bool parse_phase_padscfg(const char *str, allpads_t* padscfg)
         }
       }
     }
-
-    if (str[i] != '0' && str[i] != '1' && str[i] != '2')
+    else if (str[i] != '0' && str[i] != '1' && str[i] != '2')
     {
       return false;
     }
@@ -178,11 +181,11 @@ static bool parse_phase_padscfg(const char *str, allpads_t* padscfg)
       case 9: padscfg->row[0].b_rgt = str[i] - '0'; break;
       case 10: padscfg->row[0].b_bot = str[i] - '0'; break;
 
-      case 12: padscfg->row[1].c_top = str[i] - '0'; break;
-      case 13: padscfg->row[1].c_lft = str[i] - '0'; break;
-      case 14: padscfg->row[1].c_mid = str[i] - '0'; break;
-      case 15: padscfg->row[1].c_rgt = str[i] - '0'; break;
-      case 16: padscfg->row[1].c_bot = str[i] - '0'; break;
+      case 12: padscfg->row[0].c_top = str[i] - '0'; break;
+      case 13: padscfg->row[0].c_lft = str[i] - '0'; break;
+      case 14: padscfg->row[0].c_mid = str[i] - '0'; break;
+      case 15: padscfg->row[0].c_rgt = str[i] - '0'; break;
+      case 16: padscfg->row[0].c_bot = str[i] - '0'; break;
 
       case 18: padscfg->row[1].a_top = str[i] - '0'; break;
       case 19: padscfg->row[1].a_lft = str[i] - '0'; break;
@@ -196,11 +199,11 @@ static bool parse_phase_padscfg(const char *str, allpads_t* padscfg)
       case 27: padscfg->row[1].b_rgt = str[i] - '0'; break;
       case 28: padscfg->row[1].b_bot = str[i] - '0'; break;
 
-      case 30: padscfg->row[2].c_top = str[i] - '0'; break;
-      case 31: padscfg->row[2].c_lft = str[i] - '0'; break;
-      case 32: padscfg->row[2].c_mid = str[i] - '0'; break;
-      case 33: padscfg->row[2].c_rgt = str[i] - '0'; break;
-      case 34: padscfg->row[2].c_bot = str[i] - '0'; break;
+      case 30: padscfg->row[1].c_top = str[i] - '0'; break;
+      case 31: padscfg->row[1].c_lft = str[i] - '0'; break;
+      case 32: padscfg->row[1].c_mid = str[i] - '0'; break;
+      case 33: padscfg->row[1].c_rgt = str[i] - '0'; break;
+      case 34: padscfg->row[1].c_bot = str[i] - '0'; break;
 
       case 36: padscfg->row[2].a_top = str[i] - '0'; break;
       case 37: padscfg->row[2].a_lft = str[i] - '0'; break;
@@ -497,7 +500,8 @@ void StartUxTask(void const *argument)
       do_profile(bits);
       HAL_GPIO_WritePin(LEDC_GPIO_Port, LEDC_Pin, GPIO_PIN_SET);
     }
-    else
+
+    if (edge > 0)
     {
       printf("SW5 OFF, do no profile\r\n");
 

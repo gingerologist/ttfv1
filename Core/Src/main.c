@@ -160,8 +160,13 @@ void DAC_Start(void)
 *         corresponding 12-bit DAC value (0-4095) based on a 3.3V reference voltage,
 *         then updates DAC channel 1 with the calculated value
 */
-void DAC_Update(int mv)
+void DAC_Update(uint32_t mv)
 {
+  if (mv > 700)
+  {
+    mv = 700;
+  }
+
   uint32_t value = (mv * 4095) / 3300; /* Convert 700mV to DAC value */
   HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, value);
 }
@@ -231,11 +236,11 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of profileTask */
-  osThreadDef(profileTask, StartProfileTask, osPriorityAboveNormal, 0, 1024);
+  osThreadDef(profileTask, StartProfileTask, osPriorityAboveNormal, 0, 2048);
   profileTaskHandle = osThreadCreate(osThread(profileTask), NULL);
 
   /* definition and creation of uxTask */
-  osThreadDef(uxTask, StartUxTask, osPriorityNormal, 0, 1024);
+  osThreadDef(uxTask, StartUxTask, osPriorityNormal, 0, 2048);
   uxTaskHandle = osThreadCreate(osThread(uxTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */

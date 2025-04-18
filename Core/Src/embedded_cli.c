@@ -427,8 +427,8 @@ static void historyRemove(CliHistory *history, const char *str);
 static uint16_t getTokenPosition(const char *tokenizedStr, uint16_t pos);
 
 EmbeddedCliConfig *embeddedCliDefaultConfig(void) {
-    defaultConfig.rxBufferSize = 64;
-    defaultConfig.cmdBufferSize = 64;
+    defaultConfig.rxBufferSize = 128;
+    defaultConfig.cmdBufferSize = 128;
     defaultConfig.historyBufferSize = 128;
     defaultConfig.cliBuffer = NULL;
     defaultConfig.cliBufferSize = 0;

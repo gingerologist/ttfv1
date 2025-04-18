@@ -151,7 +151,7 @@ void set_profile_phase(int profile_index, int phase_index, phase_t *phase)
     profile[profile_index].b = *phase;
   }
 
-  save_profiles();
+  // save_profiles();
 }
 
 #if 0
@@ -406,6 +406,7 @@ void StartProfileTask(void const *argument)
 {
   HAL_StatusTypeDef status;
   int dac_in_mv;
+  printf("\r\n\r\n---- boot ----\r\n");
 
   vTaskDelay(100);
 
@@ -421,6 +422,7 @@ void StartProfileTask(void const *argument)
 
   DDS_Start();
   DAC_Start();
+  DAC_Update(630);  // 10%
 
   vTaskDelay(100);
 
