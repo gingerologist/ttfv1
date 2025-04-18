@@ -12,6 +12,8 @@
  * connected to an STM32F405 via I2C1 (PB6/PB7)
  */
 
+#include <stdbool.h>
+#include <stdio.h>
 #include "stm32f4xx_hal.h"
 #include "tca9555.h"
 
@@ -229,6 +231,152 @@ void TCA9555_TestSequence(uint32_t delay_ms)
         test_pattern = ~test_pattern;
     }
 }
+
+/**
+ * @brief  Dumps all TCA9555 register values for diagnostic purposes
+ * @retval None
+ */
+void TCA9555_Dump(void)
+{
+  uint8_t value = 0;
+  const char* reg_names[] = {
+    "input port 0   ",
+    "input port 1   ",
+    "output port 0  ",
+    "output port 1  ",
+    "polarity 0     ",
+    "polarity 1     ",
+    "config 0       ",
+    "config 1       "
+  };
+
+  for (int i = 0; i < 6; i++)  // For each I/O expander
+  {
+    bool first_reg = true;
+    for (uint8_t reg = 0x00; reg <= 0x07; reg++)  // For each register (0x00-0x07)
+    {
+      if (HAL_OK == TCA9555_ReadReg(i, reg, &value))
+      {
+        if (first_reg)
+        {
+          printf("ioexp %d  %s: %d\r\n", i, reg_names[reg], value);
+          first_reg = false;
+        }
+        else
+        {
+          printf("         %s: %d\r\n", reg_names[reg], value);
+        }
+      }
+      else
+      {
+        if (first_reg)
+        {
+          printf("ioexp %d  %s: error!\r\n", i, reg_names[reg]);
+          first_reg = false;
+        }
+        else
+        {
+          printf("         %s: error!\r\n", reg_names[reg]);
+        }
+        break;  // Skip remaining registers for this expander if there's an error
+      }
+    }
+  }
+}
+
+#if 0
+void TCA9555_Dump(void)
+{
+  uint8_t value = 0;
+
+  for (int i = 0; i < 6; i++)
+  {
+    // input
+    if (HAL_OK == TCA9555_ReadReg(i, TCA9555_REG_INPUT_PORT0, &value))
+    {
+      printf("ioexp %d  input port 0   : %d\r\n", i, value);
+    }
+    else
+    {
+      printf("ioexp %d  input port 0   : error!\r\n", i);
+      continue;
+    }
+
+    if (HAL_OK == TCA9555_ReadReg(i, TCA9555_REG_INPUT_PORT1, &value))
+    {
+      printf("         input port 1   : %d\r\n", value);
+    }
+    else
+    {
+      printf("         input port 1   : error!\r\n");
+      continue;
+    }
+
+    // output
+    if (HAL_OK == TCA9555_ReadReg(i, TCA9555_REG_OUTPUT_PORT0, &value))
+    {
+      printf("         output port 0  : %d\r\n", value);
+    }
+    else
+    {
+      printf("         output port 0  : error!\r\n");
+      continue;
+    }
+
+    if (HAL_OK == TCA9555_ReadReg(i, TCA9555_REG_OUTPUT_PORT1, &value))
+    {
+      printf("         output port 1  : %d\r\n", value);
+    }
+    else
+    {
+      printf("         output port 1  : error!\r\n");
+      continue;
+    }
+
+    // polarity
+    if (HAL_OK == TCA9555_ReadReg(i, TCA9555_REG_POLARITY_PORT0, &value))
+    {
+      printf("         polarity 0     : %d\r\n", value);
+    }
+    else
+    {
+      printf("         polarity 0     : error!\r\n");
+      continue;
+    }
+
+    if (HAL_OK == TCA9555_ReadReg(i, TCA9555_REG_POLARITY_PORT1, &value))
+    {
+      printf("         polarity 1     : %d\r\n", value);
+    }
+    else
+    {
+      printf("         polarity 1     : error!\r\n");
+      continue;
+    }
+
+    // control
+    if (HAL_OK == TCA9555_ReadReg(i, TCA9555_REG_CONFIG_PORT0, &value))
+    {
+      printf("         config 0       : %d\r\n", value);
+    }
+    else
+    {
+      printf("         config 0       : error!\r\n");
+      continue;
+    }
+
+    if (HAL_OK == TCA9555_ReadReg(i, TCA9555_REG_CONFIG_PORT1, &value))
+    {
+      printf("         config 1       : %d\r\n", value);
+    }
+    else
+    {
+      printf("         config 1       : error!\r\n");
+      continue;
+    }
+  }
+}
+#endif
 
 /**
  *

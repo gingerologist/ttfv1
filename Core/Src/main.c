@@ -87,37 +87,18 @@ void StartUxTask(void const * argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void uart_printf(UART_HandleTypeDef *huart, const char *fmt, ...)
-{
-  int len;
-  char buf[128];
-  va_list args;
 
-  va_start(args, fmt);
-  len = vsnprintf(buf, sizeof(buf), fmt, args);
-  va_end(args);
-
-  HAL_UART_Transmit(huart, (uint8_t*) buf, len, HAL_MAX_DELAY);
-}
-
-// TODO remove this function
-static void UART2_write(const char *str)
-{
-  int len = strlen(str);
-  if (len == 0)
-  {
-    return;
-  }
-
-  HAL_UART_Transmit(&huart2, (const uint8_t*) str, len, HAL_MAX_DELAY);
-}
-
-void print_line(const char *str)
-{
-  UART2_write(str);
-  UART2_write("\r\n");
-}
-
+/**
+* @brief  Overrides the standard _write function to redirect stdout and stderr to UART2
+* @param  file: File descriptor (1 for stdout, 2 for stderr)
+* @param  ptr: Pointer to the data buffer to be written
+* @param  len: Number of bytes to write
+* @retval The number of bytes written if successful, -1 otherwise
+*
+* @note   This function is called by printf and other stdio functions to output data.
+*         It redirects standard output (stdout) and standard error (stderr) to the
+*         configured UART2 peripheral, enabling printf functionality over serial.
+*/
 int _write(int file, char *ptr, int len)
 {
   // Redirect stdout (file=1) and stderr (file=2) to UART2
@@ -130,6 +111,61 @@ int _write(int file, char *ptr, int len)
   errno = EBADF;
   return -1;
 }
+
+/**
+* @brief  Initializes and starts the AD9834 DDS (Direct Digital Synthesis) chip
+* @retval None
+*
+* @note   This function configures and enables the AD9834 DDS chip from Analog Devices
+*         by sending the following sequence via SPI:
+*         1. Control word with B28=1 and RESET=1 (reset chip, enable 28-bit frequency writes)
+*         2. Frequency register low word (FREQLW)
+*         3. Frequency register high word (FREQHW)
+*         4. Phase register configuration
+*         5. Control word with B28=1 and RESET=0 (maintain config, enable output)
+*/
+void DDS_Start(void)
+{
+  uint16_t data[5] =
+  { 0x2100,   // Control word: B28=1, RESET=1
+    0x449C,   // FREQLW
+    0x4083,   // FREQHW
+    0xC000,   // Phase register
+    0x2000 }; // Control word: B28=1, RESET=0 (enable output)
+
+  for (int i = 0; i < 5; i++)
+  {
+    HAL_SPI_Transmit(&hspi2, (uint8_t*) &data[i], 1, HAL_MAX_DELAY);
+  }
+}
+
+/**
+* @brief  Starts the DAC channel 1 conversion
+* @retval None
+*
+* @note   This is a simple wrapper function that calls the HAL DAC start function
+*         for DAC channel 1 using the pre-configured DAC handle (hdac)
+*/
+void DAC_Start(void)
+{
+  HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
+}
+
+/**
+* @brief  Updates the DAC output voltage to the specified value in millivolts
+* @param  mv: Desired output voltage in millivolts (mV)
+* @retval None
+*
+* @note   This function converts the requested voltage from millivolts to the
+*         corresponding 12-bit DAC value (0-4095) based on a 3.3V reference voltage,
+*         then updates DAC channel 1 with the calculated value
+*/
+void DAC_Update(int mv)
+{
+  uint32_t value = (mv * 4095) / 3300; /* Convert 700mV to DAC value */
+  HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, value);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -329,13 +365,7 @@ static void MX_DAC_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN DAC_Init 2 */
-  /* Start DAC */
-  HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
 
-  /* Set initial output to 700mV */
-  uint32_t dac_in_mV = 350;
-  uint32_t dac_value = (dac_in_mV * 4095) / 3300; /* Convert 700mV to DAC value */
-  HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, dac_value);
   /* USER CODE END DAC_Init 2 */
 
 }
@@ -551,228 +581,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void DDS_Start(void)
-{
-  uint16_t data[5] =
-  { 0x2100,   // Control word: B28=1, RESET=1
-    0x449C,   // FREQLW
-    0x4083,   // FREQHW
-    0xC000,   // Phase register
-    0x2000 }; // Control word: B28=1, RESET=0 (enable output)
 
-  for (int i = 0; i < 5; i++)
-  {
-    HAL_SPI_Transmit(&hspi2, (uint8_t*) &data[i], 1, HAL_MAX_DELAY);
-  }
-}
-
-void dac_output_in_mv(int dac_in_mv)
-{
-  uint32_t dac_value = (dac_in_mv * 4095) / 3300; /* Convert 700mV to DAC value */
-  HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, dac_value);
-}
-
-void print_tca9555(void)
-{
-  uint8_t value = 0;
-
-  for (int i = 0; i < 6; i++)
-  {
-    // input
-    if (HAL_OK == TCA9555_ReadReg(i, TCA9555_REG_INPUT_PORT0, &value))
-    {
-      uart_printf(&huart2, "ioexp %d  input port 0   : %d\r\n", i, value);
-    }
-    else
-    {
-      uart_printf(&huart2, "ioexp %d  input port 0   : error!\r\n");
-      continue;
-    }
-
-    if (HAL_OK == TCA9555_ReadReg(i, TCA9555_REG_INPUT_PORT1, &value))
-    {
-      uart_printf(&huart2, "         input port 1   : %d\r\n", value);
-    }
-    else
-    {
-      uart_printf(&huart2, "         input port 1   : error!\r\n");
-      continue;
-    }
-
-    // output
-    if (HAL_OK == TCA9555_ReadReg(i, TCA9555_REG_OUTPUT_PORT0, &value))
-    {
-      uart_printf(&huart2, "         output port 0  : %d\r\n", value);
-    }
-    else
-    {
-      uart_printf(&huart2, "         output port 0  : error!\r\n");
-      continue;
-    }
-
-    if (HAL_OK == TCA9555_ReadReg(i, TCA9555_REG_OUTPUT_PORT1, &value))
-    {
-      uart_printf(&huart2, "         output port 1  : %d\r\n", value);
-    }
-    else
-    {
-      uart_printf(&huart2, "         output port 1  : error!\r\n");
-      continue;
-    }
-
-    // polarity
-    if (HAL_OK == TCA9555_ReadReg(i, TCA9555_REG_POLARITY_PORT0, &value))
-    {
-      uart_printf(&huart2, "         polarity 0     : %d\r\n", value);
-    }
-    else
-    {
-      uart_printf(&huart2, "         polarity 0     : error!\r\n");
-      continue;
-    }
-
-    if (HAL_OK == TCA9555_ReadReg(i, TCA9555_REG_POLARITY_PORT1, &value))
-    {
-      uart_printf(&huart2, "         polarity 1     : %d\r\n", value);
-    }
-    else
-    {
-      uart_printf(&huart2, "         polarity 1     : error!\r\n");
-      continue;
-    }
-
-    // control
-    if (HAL_OK == TCA9555_ReadReg(i, TCA9555_REG_CONFIG_PORT0, &value))
-    {
-      uart_printf(&huart2, "         config 0       : %d\r\n", value);
-    }
-    else
-    {
-      uart_printf(&huart2, "         config 0       : error!\r\n");
-      continue;
-    }
-
-    if (HAL_OK == TCA9555_ReadReg(i, TCA9555_REG_CONFIG_PORT1, &value))
-    {
-      uart_printf(&huart2, "         config 1       : %d\r\n", value);
-    }
-    else
-    {
-      uart_printf(&huart2, "         config 1       : error!\r\n");
-      continue;
-    }
-  }
-}
-
-#if 0
-
-typedef enum {
-    SW_RELEASED,
-    SW_DEBOUNCING_DOWN,
-    SW_PRESSED,
-    SW_DEBOUNCING_UP
-} SW_Status;
-
-typedef struct {
-    SW_Status status;
-    uint8_t count;
-    uint8_t edge;  // 0 = no edge, 1 = down edge, 2 = up edge
-} SW_HandleTypeDef;
-
-static SW_HandleTypeDef sw5_handle = {
-    .status = SW_RELEASED,
-    .count = 0,
-    .edge = 0
-};
-
-/* Returns:
- * 0 if no edge detected
- * 1 if key down edge detected
- * 2 if key up edge detected
- */
-static uint8_t SW5_EdgeDetect(void)
-{
-    GPIO_PinState current_state = HAL_GPIO_ReadPin(SW5_GPIO_Port, SW5_Pin);
-    uint8_t return_edge = 0;
-
-    switch (sw5_handle.status)
-    {
-    case SW_RELEASED:
-        if (current_state == GPIO_PIN_RESET)  // Assuming active low
-        {
-            sw5_handle.status = SW_DEBOUNCING_DOWN;
-            sw5_handle.count = 1;
-        }
-        break;
-
-    case SW_DEBOUNCING_DOWN:
-        if (current_state == GPIO_PIN_RESET)
-        {
-            sw5_handle.count++;
-            if (sw5_handle.count > 3)  // Debounce threshold
-            {
-                sw5_handle.status = SW_PRESSED;
-                sw5_handle.count = 0;
-                return_edge = 1;  // Key down edge
-            }
-        }
-        else
-        {
-            sw5_handle.status = SW_RELEASED;
-            sw5_handle.count = 0;
-        }
-        break;
-
-    case SW_PRESSED:
-        if (current_state == GPIO_PIN_SET)  // Released
-        {
-            sw5_handle.status = SW_DEBOUNCING_UP;
-            sw5_handle.count = 1;
-        }
-        break;
-
-    case SW_DEBOUNCING_UP:
-        if (current_state == GPIO_PIN_SET)
-        {
-            sw5_handle.count++;
-            if (sw5_handle.count > 3)  // Debounce threshold
-            {
-                sw5_handle.status = SW_RELEASED;
-                sw5_handle.count = 0;
-                return_edge = 2;  // Key up edge
-            }
-        }
-        else
-        {
-            sw5_handle.status = SW_PRESSED;
-            sw5_handle.count = 0;
-        }
-        break;
-    }
-
-    return return_edge;
-}
-#endif
-
-// Example usage in a polling loop
-//void TaskLoop(void)
-//{
-//    while (1)
-//    {
-//        uint8_t sw_edge = SW5_EdgeDetect();
-//
-//        if (sw_edge == 1)  // Key down
-//        {
-//            // Do something on key down
-//        }
-//        else if (sw_edge == 2)  // Key up
-//        {
-//            // Do something on key up
-//        }
-//
-//        // Other tasks...
-//    }
-//}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartProfileTask */

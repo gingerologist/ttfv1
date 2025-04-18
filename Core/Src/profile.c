@@ -420,6 +420,9 @@ void StartProfileTask(void const *argument)
   }
 
   DDS_Start();
+  DAC_Start();
+
+  vTaskDelay(100);
 
 entry_point:
   CURR_PROFILE= NEXT_PROFILE;
@@ -430,7 +433,7 @@ entry_point:
 
     apply_padscfg(&CURR_PROFILE.a.pads);
     dac_in_mv = level_to_dac_in_mv(CURR_PROFILE.a.level);
-    dac_output_in_mv(dac_in_mv);
+    DAC_Update(dac_in_mv);
     dur = CURR_PROFILE.a.duration * 1000;
     if (dur == 0)
       dur = portMAX_DELAY;
@@ -442,7 +445,7 @@ entry_point:
 
     apply_padscfg(&CURR_PROFILE.b.pads);
     dac_in_mv = level_to_dac_in_mv(CURR_PROFILE.b.level);
-    dac_output_in_mv(level_to_dac_in_mv(CURR_PROFILE.b.level));
+    DAC_Update(level_to_dac_in_mv(CURR_PROFILE.b.level));
     dur = CURR_PROFILE.b.duration *1000;
     if (dur == 0)
       dur = portMAX_DELAY;
