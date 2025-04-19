@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "cmsis_os.h"
+#include "stm32f4xx_hal.h"
 #include "main.h"
 #include "profile.h"
 #include "tca9555.h"
@@ -151,7 +152,7 @@ void set_profile_phase(int profile_index, int phase_index, phase_t *phase)
     profile[profile_index].b = *phase;
   }
 
-  // save_profiles();
+  save_profiles();
 }
 
 #if 0
@@ -496,16 +497,11 @@ entry_point:
 // Sectors 5-11: 128KB each
 // Total 1MB (0x100000 bytes)
 
-#define FLASH_SIZE              0x00100000  // 1MB
-#define FLASH_ADDR_BASE         0x08000000
+#define FLASH_SIZE              0x00100000U   // 1MB
+#define FLASH_ADDR_BASE         0x08000000UL
 // #define FLASH_SECTOR_3
-#define FLASH_SECTOR_3_SIZE     0x00004000  // 16KB
-#define FLASH_SECTOR_3_ADDR     (FLASH_ADDR_BASE + FLASH_SECTOR_3_SIZE * 3)
-
-static void delay(void)
-{
-  vTaskDelay(50);
-}
+#define FLASH_SECTOR_3_SIZE     0x00004000U   // 16KB
+#define FLASH_SECTOR_3_ADDR     (FLASH_ADDR_BASE + FLASH_SECTOR_3_SIZE * 3UL)
 
 static HAL_StatusTypeDef erase_sector_3(void)
 {
@@ -526,10 +522,114 @@ static HAL_StatusTypeDef erase_sector_3(void)
 #define NUM_OF_PROFILES                 16
 
 #define SIZE_OF_PROFILE_IN_WORD         10
-#define SIZE_OF_PROFILE_IN_DOUBLEWORD   5
 #define SIZE_OF_PROFILES                (sizeof(profile_t) * NUM_OF_PROFILES)
-#define SIZE_OF_PROFILES_IN_DOUBLEWORD  (SIZE_OF_PROFILES / 8)
 #define SIZE_OF_PROFILES_IN_WORD        (SIZE_OF_PROFILES / 4)
+
+#define DEBUG_SAVE_PROFILES             1
+#define DEBUG_WRITING_EVERY_N_WORDS     10
+
+static HAL_StatusTypeDef save_profiles(void)
+{
+  HAL_StatusTypeDef status;
+
+  // Debug output
+  printf("Profile size: %u bytes (%u words)\r\n", sizeof(profile_t), SIZE_OF_PROFILE_IN_WORD);
+  printf("Total profiles: %u\r\n", NUM_OF_PROFILES);
+  printf("Start address: 0x%08lX\r\n", (FLASH_SECTOR_3_ADDR));
+
+  // Calculate CRC
+  uint32_t crc = HAL_CRC_Calculate(&hcrc, (uint32_t*)profile, SIZE_OF_PROFILES_IN_WORD);
+
+  /* Unlock the Flash to enable the flash control register access */
+  HAL_FLASH_Unlock();
+
+  // Clear all error flags
+  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR |
+                      FLASH_FLAG_PGAERR | FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR);
+
+  status = erase_sector_3();
+  if (status != HAL_OK)
+  {
+    printf("error: failed to erase sector 3\r\n");
+    HAL_FLASH_Lock();
+    return status;
+  }
+
+  vTaskDelay(100);
+
+  // Write profile
+  uint32_t *source_ptr = (uint32_t*)profile;
+  uint32_t write_address;
+
+  for (int i = 0; i < SIZE_OF_PROFILES_IN_WORD; i++)
+  {
+    write_address = FLASH_SECTOR_3_ADDR + (i * sizeof(uint32_t));
+
+#if DEBUG_WRITING_EVERY_N_WORDS
+    // Print debug info every 10 words
+    if (i % (DEBUG_WRITING_EVERY_N_WORDS) == 0) {
+      printf("Writing word %d (0x%08lX) to address 0x%08lX\r\n",
+             i, source_ptr[i], write_address);
+    }
+#endif
+
+    status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, write_address, source_ptr[i]);
+
+    if (status != HAL_OK)
+    {
+      printf("error: failed to write word at index %d (addr: 0x%08lX, value: 0x%08lX)\r\n",
+             i, write_address, source_ptr[i]);
+      printf("Flash SR: 0x%08lX\r\n", FLASH->SR);
+      HAL_FLASH_Lock();
+      return status;
+    }
+
+    vTaskDelay(4);
+  }
+
+  // Write CRC
+  write_address = FLASH_SECTOR_3_ADDR + SIZE_OF_PROFILES;
+  printf("Writing CRC (0x%08lX) to address 0x%08lX\r\n", crc, write_address);
+
+  status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, write_address, crc);
+  if (status != HAL_OK)
+  {
+    printf("error: failed to write CRC\r\n");
+    HAL_FLASH_Lock();
+    return status;
+  }
+
+  HAL_FLASH_Lock();
+  vTaskDelay(100);
+
+  // Verify first few words were written correctly
+  printf("Verification:\r\n");
+  uint32_t *verify_ptr = (uint32_t*)FLASH_SECTOR_3_ADDR;
+  bool all_match = true;
+  for (int i = 0; i < SIZE_OF_PROFILES_IN_WORD; i++)
+  {
+
+    if (verify_ptr[i] != source_ptr[i])
+    {
+      printf("Word %d: Flash=0x%08lX, Original=0x%08lX %s\r\n", i,
+          verify_ptr[i], source_ptr[i], "MISMATCH");
+      all_match = false;
+    }
+  }
+
+  if (all_match)
+  {
+    printf("ALL WORDS MATCH.\r\n");
+  }
+
+  printf("CRC: Flash=0x%08lX, Original=0x%08lX %s\r\n",
+      verify_ptr[SIZE_OF_PROFILES_IN_WORD], crc,
+      verify_ptr[SIZE_OF_PROFILES_IN_WORD] == crc ? "MATCH" : "MISMATCH");
+
+  return status;
+}
+
+#if 0
 
 /*
  * write profile_t[16] to flash. sizeof(profile_t) == 40.
@@ -537,7 +637,6 @@ static HAL_StatusTypeDef erase_sector_3(void)
 static HAL_StatusTypeDef save_profiles(void)
 {
   HAL_StatusTypeDef status;
-  uint64_t *dword = (uint64_t*) profile;
 
   // calculate crc
   uint32_t crc = HAL_CRC_Calculate(&hcrc, (uint32_t*) profile,
@@ -549,36 +648,49 @@ static HAL_StatusTypeDef save_profiles(void)
   status = erase_sector_3();
   if (status != HAL_OK)
   {
+    printf("error: failed to erase sector 3\r\n");
     HAL_FLASH_Lock();
     return status;
   }
 
-  delay();
+  vTaskDelay(500);
 
   // write profile
-  for (int i = 0; i < SIZE_OF_PROFILES_IN_DOUBLEWORD; i++)
+  for (int i = 0; i < NUM_OF_PROFILES; i++)
   {
-    status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD,
-        (FLASH_SECTOR_3_ADDR + i * sizeof(uint64_t)), dword[i]);
-
-    if (status != HAL_OK)
+    for (int j = 0; j < SIZE_OF_PROFILE_IN_WORD; j++)
     {
-      HAL_FLASH_Lock();
-      return status;
-    }
+      status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD,
+          (FLASH_SECTOR_3_ADDR + i * SIZE_OF_PROFILE_IN_WORD + j * 4), profile[i].word[j]);
 
-    delay();
+      if (status != HAL_OK)
+      {
+        printf("error: failed to write profile[%d].word[%d]\r\n", i, j);
+        HAL_FLASH_Lock();
+        return status;
+      }
+
+      vTaskDelay(40);
+    }
   }
 
   // write crc
   status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD,
       (FLASH_SECTOR_3_ADDR + SIZE_OF_PROFILES), crc);
 
-  HAL_FLASH_Lock();
-  delay();
+  if (status != HAL_OK)
+  {
+    printf("error: failed to write CRC\r\n");
+    HAL_FLASH_Lock();
+    return status;
+  }
 
+  HAL_FLASH_Lock();
+  vTaskDelay(100);
   return status;
 }
+
+#endif
 
 static HAL_StatusTypeDef load_profiles(void)
 {
