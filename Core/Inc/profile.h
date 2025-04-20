@@ -11,6 +11,14 @@
 #include <stdint.h>
 #include <assert.h>
 
+#define NUM_OF_PROFILES                 16
+#define STOP_PROFILE_INDEX              (NUM_OF_PROFILES)
+#define DDBF_PROFILE_INDEX              (STOP_PROFILE_INDEX + 1)
+#define CURR_PROFILE_INDEX              (DDBF_PROFILE_INDEX + 1)
+#define NEXT_PROFILE_INDEX              (CURR_PROFILE_INDEX + 1)
+#define LAST_PROFILE_INDEX              (NEXT_PROFILE_INDEX)
+#define NUM_OF_ALL_PROFILES             (LAST_PROFILE_INDEX + 1)
+
 // suppress the IDE syntax error (yellow mark) by
 // Project --> Properties --> C/C++ General --> Preprocessor Include Paths, Macros etc.
 // On the Entries tab, select CDT User Setting Entries, then click Add

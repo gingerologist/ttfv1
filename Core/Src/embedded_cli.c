@@ -429,7 +429,7 @@ static uint16_t getTokenPosition(const char *tokenizedStr, uint16_t pos);
 EmbeddedCliConfig *embeddedCliDefaultConfig(void) {
     defaultConfig.rxBufferSize = 128;
     defaultConfig.cmdBufferSize = 128;
-    defaultConfig.historyBufferSize = 128;
+    defaultConfig.historyBufferSize = 256;
     defaultConfig.cliBuffer = NULL;
     defaultConfig.cliBufferSize = 0;
     defaultConfig.maxBindingCount = 8;

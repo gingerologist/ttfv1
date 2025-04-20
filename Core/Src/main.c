@@ -160,15 +160,41 @@ void DAC_Start(void)
 *         corresponding 12-bit DAC value (0-4095) based on a 3.3V reference voltage,
 *         then updates DAC channel 1 with the calculated value
 */
-void DAC_Update(uint32_t mv)
-{
-  if (mv > 700)
-  {
-    mv = 700;
-  }
+//void DAC_Update(uint32_t mv)
+//{
+//  uint32_t value = (mv * 4095) / 3300; /* Convert 700mV to DAC value */
+//  HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, value);
+//}
 
-  uint32_t value = (mv * 4095) / 3300; /* Convert 700mV to DAC value */
-  HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, value);
+/**
+ * @brief  Sets DAC OUT1 based on percentage input
+ * @param  percentage: Input value from 0 to 100
+ *         0%   -> 1150mV output
+ *         100% -> 0V output
+ * @retval None
+ */
+void DAC_SetOutput_Percent(uint32_t percentage)
+{
+    // Validate input range
+    if (percentage > 100)
+        percentage = 100;
+
+    // Calculate DAC value
+    // STM32F405 has 12-bit DAC (0-4095)
+    // VREF = 3.3V
+    // For 0% -> 1150mV (value = 1150/3300*4095)
+    // For 100% -> 0V (value = 0)
+    // Linear interpolation for values in between
+
+    // 1150mV corresponds to DAC value of 1426 (1150/3300*4095)
+    uint32_t value = 1426 - (percentage * 1426 / 100);
+
+    // Write value to DAC channel 1
+    // DAC_SetChannel1Data(DAC_Align_12b_R, dac_value);
+    HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, value);
+
+    // Start DAC Channel1
+    // DAC_Cmd(DAC_Channel_1, ENABLE);
 }
 
 /* USER CODE END 0 */

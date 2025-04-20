@@ -18,6 +18,7 @@
 #include "command.h"
 #include "main.h"
 #include "profile.h"
+#include "tca9555.h"
 #include "edge_detect.h"
 
 /**
@@ -32,7 +33,6 @@
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
-// static char long_buf[256];
 
 EmbeddedCliConfig *cli_config = NULL;
 EmbeddedCli *cli = NULL;
@@ -61,7 +61,7 @@ static void CLI_CMD_List(EmbeddedCli *cli, char *args, void *context)
 
 CliCommandBinding cli_cmd_list_binding =
 { "list",
-  "Print profile 1 to 9",
+  "Print profile 0 to 15",
   false,
   NULL,
   CLI_CMD_List };
@@ -318,7 +318,7 @@ static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context)
   int phase_index;
   phase_t phase;
 
-  uint8_t count = embeddedCliGetTokenCount(args);
+  uint16_t count = embeddedCliGetTokenCount(args);
 
   if (count != 5)
   {
@@ -376,6 +376,11 @@ CliCommandBinding cli_cmd_define_binding =
   NULL,
   CLI_CMD_Define };
 
+static void CLI_CMD_Save(EmbeddedCli *cli, char *args, void *context)
+{
+
+}
+
 static void CLI_CMD_Reboot(EmbeddedCli *cli, char *args, void *context)
 {
   NVIC_SystemReset();
@@ -432,6 +437,114 @@ CliCommandBinding cli_cmd_led_binding =
   NULL,
   CLI_CMD_LED };
 
+static void CLI_CMD_LL(EmbeddedCli *cli, char *args, void *context)
+{
+  printf("DDBF profile:\r\n");
+  print_profile(DDBF_PROFILE_INDEX);
+  printf("CURR profile:\r\n");
+  print_profile(CURR_PROFILE_INDEX);
+  printf("NEXT profile:\r\n");
+  print_profile(NEXT_PROFILE_INDEX);
+}
+
+CliCommandBinding cli_cmd_ll_binding =
+{ "ll",
+  "list current and next profile, for testing purposes only.",
+  false,
+  NULL,
+  CLI_CMD_LL };
+
+/*
+ * t1 0 00000
+ */
+static void CLI_CMD_T1(EmbeddedCli *cli, char *args, void *context)
+{
+  static phase_t phase;
+  rowpads_t *row;
+  const char *pos;
+  const char *cfg;
+
+  uint16_t count = embeddedCliGetTokenCount(args);
+
+  if (count != 2)
+  {
+    printf("error: t1 command requires exact 2 arguments.\r\n");
+    return;
+  }
+
+  pos = embeddedCliGetToken(args, 1);
+  if (strlen(pos) != 1 || *pos < '0' || *pos > '8')
+  {
+    printf("error: the first argument must be 0-8\r\n");
+  }
+
+  cfg = embeddedCliGetToken(args, 2);
+  if (strlen(cfg) != 5 || cfg[0] < '0' || cfg[0] > '2' || cfg[1] < '0'
+      || cfg[1] > '2' || cfg[2] < '0' || cfg[2] > '2' || cfg[3] < '0'
+      || cfg[3] > '2' || cfg[4] < '0' || cfg[4] > '2')
+  {
+    printf(
+        "error: the second argument must be nnnnn where n is 0, 1, or 2\r\n");
+  }
+
+  memset(&phase, 0, sizeof(phase));
+  set_profile_phase(DDBF_PROFILE_INDEX, 1, &phase);
+
+  phase.level = 20;
+
+  row = &phase.pads.row[(*pos - '0') / 3];
+
+  switch ((*pos - '0') % 3)
+  {
+    case 0:
+      row->a_top = cfg[0] - '0';
+      row->a_lft = cfg[1] - '0';
+      row->a_mid = cfg[2] - '0';
+      row->a_rgt = cfg[3] - '0';
+      row->a_bot = cfg[4] - '0';
+      break;
+    case 1:
+      row->b_top = cfg[0] - '0';
+      row->b_lft = cfg[1] - '0';
+      row->b_mid = cfg[2] - '0';
+      row->b_rgt = cfg[3] - '0';
+      row->b_bot = cfg[4] - '0';
+      break;
+    case 2:
+      row->c_top = cfg[0] - '0';
+      row->c_lft = cfg[1] - '0';
+      row->c_mid = cfg[2] - '0';
+      row->c_rgt = cfg[3] - '0';
+      row->c_bot = cfg[4] - '0';
+      break;
+    default:
+      break;
+  }
+
+  set_profile_phase(DDBF_PROFILE_INDEX, 0, &phase);
+
+  do_profile(DDBF_PROFILE_INDEX);
+}
+
+CliCommandBinding cli_cmd_t1_binding =
+{ "t1",
+  "direct configure a single group of pads, for testing purposes only.",
+  true,
+  NULL,
+  CLI_CMD_T1 };
+
+static void CLI_CMD_TCA(EmbeddedCli *cli, char *args, void *context)
+{
+  TCA9555_Dump();
+}
+
+CliCommandBinding cli_cmd_tca_binding =
+{ "tca",
+  "pretty print tca9555 registers.",
+  false,
+  NULL,
+  CLI_CMD_TCA };
+
 void StartUxTask(void const *argument)
 {
   static SW_HandleTypeDef sw5_handle = {
@@ -450,8 +563,11 @@ void StartUxTask(void const *argument)
   embeddedCliAddBinding(cli, cli_cmd_reboot_binding);
   embeddedCliAddBinding(cli, cli_cmd_switch_binding);
   // embeddedCliAddBinding(cli, cli_cmd_led_binding);
+  embeddedCliAddBinding(cli, cli_cmd_ll_binding);
+  embeddedCliAddBinding(cli, cli_cmd_t1_binding);
+  embeddedCliAddBinding(cli, cli_cmd_tca_binding);
 
-  vTaskDelay(500);
+  vTaskDelay(100);
 
   // generate the first prompt symbol
   embeddedCliReceiveChar(cli, 8);
@@ -503,9 +619,9 @@ void StartUxTask(void const *argument)
 
     if (edge > 0)
     {
-      printf("SW5 OFF, do no profile\r\n");
+      printf("SW5 OFF, do STOP profile\r\n");
 
-      do_profile(-1);
+      do_profile(STOP_PROFILE_INDEX);
       HAL_GPIO_WritePin(LEDC_GPIO_Port, LEDC_Pin, GPIO_PIN_RESET);
     }
 

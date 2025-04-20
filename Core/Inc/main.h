@@ -56,7 +56,8 @@ void Error_Handler(void);
 /* USER CODE BEGIN EFP */
 void DDS_Start(void);
 void DAC_Start(void);
-void DAC_Update(uint32_t mv);
+// void DAC_Update(uint32_t mv);
+void DAC_SetOutput_Percent(uint32_t percentage);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

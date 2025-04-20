@@ -16,14 +16,14 @@
 #include "profile.h"
 #include "tca9555.h"
 
-#define STOP_PROFILE            profile[16]
-#define DDBF_PROFILE            profile[17] // deadbeef, special profile, not used
-#define CURR_PROFILE            profile[18]
-#define NEXT_PROFILE            profile[19]
+#define STOP_PROFILE            profile[STOP_PROFILE_INDEX]
+#define DDBF_PROFILE            profile[DDBF_PROFILE_INDEX] // deadbeef, special profile, not used
+#define CURR_PROFILE            profile[CURR_PROFILE_INDEX]
+#define NEXT_PROFILE            profile[NEXT_PROFILE_INDEX]
 
 extern osMessageQId requestQueueHandle;
 
-static profile_t profile[20] =
+static profile_t profile[NUM_OF_ALL_PROFILES] =
 {
   { },  // 0
   { },  // 1
@@ -116,7 +116,7 @@ void print_profile(int i)
 {
   static char str[54];
 
-  if (i >= 16)
+  if (i >= NUM_OF_ALL_PROFILES)
   {
     return;
   }
@@ -143,6 +143,11 @@ profile_t get_profile(int index)
 
 void set_profile_phase(int profile_index, int phase_index, phase_t *phase)
 {
+  if (profile_index < 0 || profile_index > LAST_PROFILE_INDEX)
+  {
+    return;
+  }
+
   if (phase_index == 0)
   {
     profile[profile_index].a = *phase;
@@ -152,78 +157,8 @@ void set_profile_phase(int profile_index, int phase_index, phase_t *phase)
     profile[profile_index].b = *phase;
   }
 
-  save_profiles();
+  // save_profiles();
 }
-
-#if 0
-
-GPIO_PinState pin_state(uint32_t cfg, int bitpos)
-{
-	return (cfg & (1 << bitpos)) ? GPIO_PIN_SET : GPIO_PIN_RESET;
-}
-
-void update_switch(int port_index, int pin_index, GPIO_PinState c_state, GPIO_PinState s_state)
-{
-	if (s_state == GPIO_PIN_SET)
-	{
-		HAL_GPIO_WritePin(c_port[port_index][pin_index], c_pin[port_index][pin_index], c_state);
-		HAL_GPIO_WritePin(s_port[port_index][pin_index], s_pin[port_index][pin_index], s_state);
-	}
-	else
-	{
-		HAL_GPIO_WritePin(s_port[port_index][pin_index], s_pin[port_index][pin_index], s_state);
-		HAL_GPIO_WritePin(c_port[port_index][pin_index], c_pin[port_index][pin_index], c_state);
-	}
-}
-
-void update_all_switches(uint32_t pg_cfg[4])
-{
-	for (int port = 0; port < 4; port++)
-	{
-		for (int pin = 0; pin < 9; pin++)
-		{
-			GPIO_PinState c_state = pg_cfg[port] & (1 << (2 * pin + 0)) ? GPIO_PIN_SET : GPIO_PIN_RESET;
-			GPIO_PinState s_state = pg_cfg[port] & (1 << (2 * pin + 1)) ? GPIO_PIN_SET : GPIO_PIN_RESET;
-			update_switch(port, pin, c_state, s_state);
-		}
-	}
-}
-
-void do_profile_by_key(int key)
-{
-	static bool non_zero_key_ever_pressed = false;
-
-	snprintf(long_buf, 256, "key %u pressed", key);
-	print_line(long_buf);
-
-	if (key == 0)
-	{
-		if (non_zero_key_ever_pressed)
-		{
-			if (pdTRUE != xQueueSend(requestQueueHandle, &STOP_PROFILE, 0))
-			{
-				print_line("error: queue full");
-			}
-		}
-		else
-		{
-			if (pdTRUE != xQueueSend(requestQueueHandle, &DDBF_PROFILE, 0))
-			{
-				print_line("error: queue full");
-			}
-		}
-	}
-	else if (key > 0 && key < 10)
-	{
-		non_zero_key_ever_pressed = true;
-		if (pdTRUE != xQueueSend(requestQueueHandle, &profile[key - 1], 0))
-		{
-			print_line("error: queue full");
-		}
-	}
-}
-#endif
-
 
 typedef struct
 {
@@ -372,19 +307,29 @@ static void apply_padscfg(allpads_t * pads)
 
 void do_profile(int index)
 {
-  if (index >= 0 && index < 16)
+//  if (index >= 0 && index < 16)
+//  {
+//    if (pdTRUE != xQueueSend(requestQueueHandle, &profile[index], 0))
+//    {
+//      printf("error: queue full\r\n");
+//    }
+//  }
+//  else
+//  {
+//    if (pdTRUE != xQueueSend(requestQueueHandle, &STOP_PROFILE, 0))
+//    {
+//      printf("error: queue full\r\n");
+//    }
+//  }
+  if (index < 0 || index > LAST_PROFILE_INDEX)
   {
-    if (pdTRUE != xQueueSend(requestQueueHandle, &profile[index], 0))
-    {
-      printf("error: queue full\r\n");
-    }
+    printf("error: do_profile, index %d out of range\r\n", index);
+    return;
   }
-  else
+
+  if (pdTRUE != xQueueSend(requestQueueHandle, &profile[index], 0))
   {
-    if (pdTRUE != xQueueSend(requestQueueHandle, &STOP_PROFILE, 0))
-    {
-      printf("error: queue full\r\n");
-    }
+    printf("error: queue full\r\n");
   }
 }
 
@@ -409,7 +354,8 @@ void StartProfileTask(void const *argument)
   int dac_in_mv;
   printf("\r\n\r\n---- boot ----\r\n");
 
-  vTaskDelay(100);
+  TCA9555_Init_All();
+  TCA9555_Dump();
 
   status = load_profiles();
   if (status == HAL_OK)
@@ -423,7 +369,9 @@ void StartProfileTask(void const *argument)
 
   DDS_Start();
   DAC_Start();
-  DAC_Update(630);  // 10%
+
+  DAC_SetOutput_Percent(10);
+
 
   vTaskDelay(100);
 
@@ -435,8 +383,8 @@ entry_point:
     uint32_t dur;
 
     apply_padscfg(&CURR_PROFILE.a.pads);
-    dac_in_mv = level_to_dac_in_mv(CURR_PROFILE.a.level);
-    DAC_Update(dac_in_mv);
+    // dac_in_mv = level_to_dac_in_mv(CURR_PROFILE.a.level);
+    // DAC_Update(dac_in_mv);
     dur = CURR_PROFILE.a.duration * 1000;
     if (dur == 0)
       dur = portMAX_DELAY;
@@ -447,8 +395,8 @@ entry_point:
     }
 
     apply_padscfg(&CURR_PROFILE.b.pads);
-    dac_in_mv = level_to_dac_in_mv(CURR_PROFILE.b.level);
-    DAC_Update(level_to_dac_in_mv(CURR_PROFILE.b.level));
+    // dac_in_mv = level_to_dac_in_mv(CURR_PROFILE.b.level);
+    // DAC_Update(level_to_dac_in_mv(CURR_PROFILE.b.level));
     dur = CURR_PROFILE.b.duration *1000;
     if (dur == 0)
       dur = portMAX_DELAY;
@@ -519,13 +467,12 @@ static HAL_StatusTypeDef erase_sector_3(void)
   return status;
 }
 
-#define NUM_OF_PROFILES                 16
+
 
 #define SIZE_OF_PROFILE_IN_WORD         10
 #define SIZE_OF_PROFILES                (sizeof(profile_t) * NUM_OF_PROFILES)
 #define SIZE_OF_PROFILES_IN_WORD        (SIZE_OF_PROFILES / 4)
 
-#define DEBUG_SAVE_PROFILES             1
 #define DEBUG_WRITING_EVERY_N_WORDS     10
 
 static HAL_StatusTypeDef save_profiles(void)
