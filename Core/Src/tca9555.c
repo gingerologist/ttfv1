@@ -478,6 +478,12 @@ void TCA9555_UpdateOutput(uint8_t port[6][2])
   {
     TCA9555_WriteReg(i, TCA9555_REG_OUTPUT_PORT0, 0);
     TCA9555_WriteReg(i, TCA9555_REG_OUTPUT_PORT1, 0);
+  }
+
+  vTaskDelay(50);
+
+  for (int i = 0; i < 6; i++)
+  {
     TCA9555_WriteReg(i, TCA9555_REG_OUTPUT_PORT0, port[i][0]);
     TCA9555_WriteReg(i, TCA9555_REG_OUTPUT_PORT1, port[i][1]);
   }

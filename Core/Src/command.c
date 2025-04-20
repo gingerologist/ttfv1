@@ -533,17 +533,17 @@ CliCommandBinding cli_cmd_t1_binding =
   NULL,
   CLI_CMD_T1 };
 
-static void CLI_CMD_TCA(EmbeddedCli *cli, char *args, void *context)
+static void CLI_CMD_IODUMP(EmbeddedCli *cli, char *args, void *context)
 {
   TCA9555_Dump();
 }
 
 CliCommandBinding cli_cmd_tca_binding =
-{ "tca",
+{ "iodump",
   "pretty print tca9555 registers.",
   false,
   NULL,
-  CLI_CMD_TCA };
+  CLI_CMD_IODUMP };
 
 void StartUxTask(void const *argument)
 {
