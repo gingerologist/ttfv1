@@ -34,6 +34,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 
+const static phase_t zero_phase = {0};
+
 EmbeddedCliConfig *cli_config = NULL;
 EmbeddedCli *cli = NULL;
 
@@ -454,6 +456,62 @@ CliCommandBinding cli_cmd_ll_binding =
   NULL,
   CLI_CMD_LL };
 
+static void CLI_CMD_T1(EmbeddedCli *cli, char *args, void *context)
+{
+  static phase_t phase =
+  { .level = 10 };
+  const char *p;
+  char padstr[54] = "00000,00000,00000;00000,00000,00000;00000,00000,00000";
+  int pos;
+
+  uint16_t count = embeddedCliGetTokenCount(args);
+
+  if (count != 2)
+  {
+    printf("error: t1 command requires exact 2 arguments.\r\n");
+    return;
+  }
+
+  p = embeddedCliGetToken(args, 1);
+  if (strlen(p) != 1 || *p < '0' || *p > '8')
+  {
+    printf("error: the first argument must be 0-8\r\n");
+    return;
+  }
+
+  pos = *p - '0';
+
+  p = embeddedCliGetToken(args, 2);
+  if (strlen(p) != 5)
+  {
+    printf("error: the 2nd argument must contain exact 5 symbols.\r\n");
+    return;
+  }
+
+  for (int i = 0; i < 5; i++)
+  {
+    if (p[i] != '0' && p[i] != '1' && p[i] != '2')
+    {
+      printf("error: all symbols in the 2nd argument must be 0, 1 or 2.\r\n");
+      return;
+    }
+
+    padstr[pos * 6 + i] = p[i];
+  }
+
+  if (!parse_phase_padscfg(padstr, &phase.pads))
+  {
+    printf("error: unexpected error.\r\n");
+    return;
+  }
+
+  set_profile_phase(DDBF_PROFILE_INDEX, 0, &phase);
+  set_profile_phase(DDBF_PROFILE_INDEX, 1, &zero_phase);
+
+  do_profile(DDBF_PROFILE_INDEX);
+}
+
+#if 0
 /*
  * t1 0 00000
  */
@@ -525,6 +583,7 @@ static void CLI_CMD_T1(EmbeddedCli *cli, char *args, void *context)
 
   do_profile(DDBF_PROFILE_INDEX);
 }
+#endif
 
 CliCommandBinding cli_cmd_t1_binding =
 { "t1",

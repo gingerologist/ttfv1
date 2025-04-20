@@ -141,7 +141,7 @@ profile_t get_profile(int index)
 	return prfl;
 }
 
-void set_profile_phase(int profile_index, int phase_index, phase_t *phase)
+void set_profile_phase(int profile_index, int phase_index, const phase_t *phase)
 {
   if (profile_index < 0 || profile_index > LAST_PROFILE_INDEX)
   {

@@ -89,7 +89,7 @@ void do_profile(int index);
 
 // profile_t get_profile(int index);
 
-void set_profile_phase(int profile_index, int phase_index, phase_t * phase);
+void set_profile_phase(int profile_index, int phase_index, const phase_t * phase);
 
 
 #endif /* INC_PROFILE_H_ */
