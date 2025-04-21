@@ -383,6 +383,20 @@ static void CLI_CMD_Save(EmbeddedCli *cli, char *args, void *context)
 
 }
 
+static void CLI_CMD_Clear(EmbeddedCli *cli, char *args, void *context)
+{
+  // printf("\033[2J\033[H"); This does not work
+  // printf("\x1B[2J\x1B[H"); This does not work either
+  HAL_UART_Transmit(&huart2, (uint8_t*)"\x1B[2J\x1B[H", 7, 100); // this works :)
+}
+
+CliCommandBinding cli_cmd_clear_binding =
+{ "clear",
+  "Clear the screen.",
+  false,
+  NULL,
+  CLI_CMD_Clear };
+
 static void CLI_CMD_Reboot(EmbeddedCli *cli, char *args, void *context)
 {
   NVIC_SystemReset();
@@ -390,7 +404,7 @@ static void CLI_CMD_Reboot(EmbeddedCli *cli, char *args, void *context)
 
 CliCommandBinding cli_cmd_reboot_binding =
 { "reboot",
-  "Reboot the processor (for test purpose only).",
+  "Reboot the processor.",
   false,
   NULL,
   CLI_CMD_Reboot };
@@ -398,7 +412,7 @@ CliCommandBinding cli_cmd_reboot_binding =
 /*
  * Active Low (There is an ON label on switch)
  */
-static void CLI_CMD_Switch(EmbeddedCli *cli, char *args, void *context)
+static void CLI_CMD_Dip(EmbeddedCli *cli, char *args, void *context)
 {
   printf("SW1: %s, SW2: %s, SW3: %s, SW4: %s, SW5: %s%s",
       (HAL_GPIO_ReadPin(SW1_GPIO_Port, SW1_Pin) == GPIO_PIN_SET) ? "off" : "on",
@@ -409,12 +423,12 @@ static void CLI_CMD_Switch(EmbeddedCli *cli, char *args, void *context)
       "\r\n");
 }
 
-CliCommandBinding cli_cmd_switch_binding =
-{ "switch",
-  "show sw1 - sw5 on/off states (for testing purposes).",
+CliCommandBinding cli_cmd_dip_binding =
+{ "dip",
+  "Show on board DIP switch states.",
   false,
   NULL,
-  CLI_CMD_Switch };
+  CLI_CMD_Dip };
 
 static void CLI_CMD_LED(EmbeddedCli *cli, char *args, void *context)
 {
@@ -451,12 +465,12 @@ static void CLI_CMD_LL(EmbeddedCli *cli, char *args, void *context)
 
 CliCommandBinding cli_cmd_ll_binding =
 { "ll",
-  "list current and next profile, for testing purposes only.",
+  "Print internal profiles (for testing purposes only)",
   false,
   NULL,
   CLI_CMD_LL };
 
-static void CLI_CMD_T1(EmbeddedCli *cli, char *args, void *context)
+static void CLI_CMD_TGroup(EmbeddedCli *cli, char *args, void *context)
 {
   static phase_t phase =
   { .level = 10 };
@@ -498,6 +512,8 @@ static void CLI_CMD_T1(EmbeddedCli *cli, char *args, void *context)
 
     padstr[pos * 6 + i] = p[i];
   }
+
+  printf("padstr: %s\r\n", padstr);
 
   if (!parse_phase_padscfg(padstr, &phase.pads))
   {
@@ -585,24 +601,24 @@ static void CLI_CMD_T1(EmbeddedCli *cli, char *args, void *context)
 }
 #endif
 
-CliCommandBinding cli_cmd_t1_binding =
-{ "t1",
-  "direct configure a single group of pads, for testing purposes only.",
+CliCommandBinding cli_cmd_tg_binding =
+{ "tg",
+  "Direct config a single group of pads, for testing purposes only.",
   true,
   NULL,
-  CLI_CMD_T1 };
+  CLI_CMD_TGroup };
 
-static void CLI_CMD_IODUMP(EmbeddedCli *cli, char *args, void *context)
+static void CLI_CMD_Port(EmbeddedCli *cli, char *args, void *context)
 {
   TCA9555_Dump();
 }
 
-CliCommandBinding cli_cmd_tca_binding =
-{ "iodump",
-  "pretty print tca9555 registers.",
+CliCommandBinding cli_cmd_port_binding =
+{ "port",
+  "Print output value of all tca9555 ports.",
   false,
   NULL,
-  CLI_CMD_IODUMP };
+  CLI_CMD_Port };
 
 void StartUxTask(void const *argument)
 {
@@ -618,13 +634,16 @@ void StartUxTask(void const *argument)
   cli->writeChar = cli_writeChar;
 
   embeddedCliAddBinding(cli, cli_cmd_list_binding);
+
   embeddedCliAddBinding(cli, cli_cmd_define_binding);
+  embeddedCliAddBinding(cli, cli_cmd_clear_binding);
   embeddedCliAddBinding(cli, cli_cmd_reboot_binding);
-  embeddedCliAddBinding(cli, cli_cmd_switch_binding);
+  embeddedCliAddBinding(cli, cli_cmd_dip_binding);
   // embeddedCliAddBinding(cli, cli_cmd_led_binding);
+
   embeddedCliAddBinding(cli, cli_cmd_ll_binding);
-  embeddedCliAddBinding(cli, cli_cmd_t1_binding);
-  embeddedCliAddBinding(cli, cli_cmd_tca_binding);
+  embeddedCliAddBinding(cli, cli_cmd_tg_binding);
+  embeddedCliAddBinding(cli, cli_cmd_port_binding);
 
   vTaskDelay(100);
 

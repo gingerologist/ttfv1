@@ -157,7 +157,10 @@ void set_profile_phase(int profile_index, int phase_index, const phase_t *phase)
     profile[profile_index].b = *phase;
   }
 
-  // save_profiles();
+  if (profile_index < NUM_OF_PROFILES)
+  {
+    save_profiles();
+  }
 }
 
 typedef struct
@@ -193,39 +196,39 @@ static void padscfg_to_portcfg(allpads_t * pads, uint8_t port[6][2])
     { 1, 0, { 0, 1 << 4, 1 << 5 } }, // P14
     { 1, 0, { 0, 1 << 2, 1 << 3 } }, // P15
 
-    { 0, 1, { 0, 1 << 7, 1 << 6 } }, // P16
-    { 0, 1, { 0, 1 << 5, 1 << 4 } }, // P17
-    { 0, 1, { 0, 1 << 3, 1 << 2 } }, // P18
-    { 0, 1, { 0, 1 << 1, 1 << 0 } }, // P19
-    { 0, 0, { 0, 1 << 6, 1 << 7 } }, // P20
-    { 0, 0, { 0, 1 << 4, 1 << 5 } }, // P21
-    { 0, 0, { 0, 1 << 2, 1 << 3 } }, // P22
-    { 0, 0, { 0, 1 << 0, 1 << 1 } }, // P23
+    { 2, 1, { 0, 1 << 7, 1 << 6 } }, // P16
+    { 2, 1, { 0, 1 << 5, 1 << 4 } }, // P17
+    { 2, 1, { 0, 1 << 3, 1 << 2 } }, // P18
+    { 2, 1, { 0, 1 << 1, 1 << 0 } }, // P19
+    { 2, 0, { 0, 1 << 6, 1 << 7 } }, // P20
+    { 2, 0, { 0, 1 << 4, 1 << 5 } }, // P21
+    { 2, 0, { 0, 1 << 2, 1 << 3 } }, // P22
+    { 2, 0, { 0, 1 << 0, 1 << 1 } }, // P23
 
-    { 1, 1, { 0, 1 << 7, 1 << 6 } }, // P24
-    { 1, 1, { 0, 1 << 5, 1 << 4 } }, // P25
-    { 1, 1, { 0, 1 << 3, 1 << 2 } }, // P26
-    { 1, 1, { 0, 1 << 1, 1 << 0 } }, // P27
-    { 1, 0, { 0, 1 << 6, 1 << 7 } }, // P28
-    { 1, 0, { 0, 1 << 4, 1 << 5 } }, // P29
-    { 1, 0, { 0, 1 << 2, 1 << 3 } }, // P30
+    { 3, 1, { 0, 1 << 7, 1 << 6 } }, // P24
+    { 3, 1, { 0, 1 << 5, 1 << 4 } }, // P25
+    { 3, 1, { 0, 1 << 3, 1 << 2 } }, // P26
+    { 3, 1, { 0, 1 << 1, 1 << 0 } }, // P27
+    { 3, 0, { 0, 1 << 6, 1 << 7 } }, // P28
+    { 3, 0, { 0, 1 << 4, 1 << 5 } }, // P29
+    { 3, 0, { 0, 1 << 2, 1 << 3 } }, // P30
 
-    { 0, 1, { 0, 1 << 7, 1 << 6 } }, // P31
-    { 0, 1, { 0, 1 << 5, 1 << 4 } }, // P32
-    { 0, 1, { 0, 1 << 3, 1 << 2 } }, // P33
-    { 0, 1, { 0, 1 << 1, 1 << 0 } }, // P34
-    { 0, 0, { 0, 1 << 6, 1 << 7 } }, // P35
-    { 0, 0, { 0, 1 << 4, 1 << 5 } }, // P36
-    { 0, 0, { 0, 1 << 2, 1 << 3 } }, // P37
-    { 0, 0, { 0, 1 << 0, 1 << 1 } }, // P38
+    { 4, 1, { 0, 1 << 7, 1 << 6 } }, // P31
+    { 4, 1, { 0, 1 << 5, 1 << 4 } }, // P32
+    { 4, 1, { 0, 1 << 3, 1 << 2 } }, // P33
+    { 4, 1, { 0, 1 << 1, 1 << 0 } }, // P34
+    { 4, 0, { 0, 1 << 6, 1 << 7 } }, // P35
+    { 4, 0, { 0, 1 << 4, 1 << 5 } }, // P36
+    { 4, 0, { 0, 1 << 2, 1 << 3 } }, // P37
+    { 4, 0, { 0, 1 << 0, 1 << 1 } }, // P38
 
-    { 1, 1, { 0, 1 << 7, 1 << 6 } }, // P39
-    { 1, 1, { 0, 1 << 5, 1 << 4 } }, // P40
-    { 1, 1, { 0, 1 << 3, 1 << 2 } }, // P41
-    { 1, 1, { 0, 1 << 1, 1 << 0 } }, // P42
-    { 1, 0, { 0, 1 << 6, 1 << 7 } }, // P43
-    { 1, 0, { 0, 1 << 4, 1 << 5 } }, // P44
-    { 1, 0, { 0, 1 << 2, 1 << 3 } }, // P45
+    { 5, 1, { 0, 1 << 7, 1 << 6 } }, // P39
+    { 5, 1, { 0, 1 << 5, 1 << 4 } }, // P40
+    { 5, 1, { 0, 1 << 3, 1 << 2 } }, // P41
+    { 5, 1, { 0, 1 << 1, 1 << 0 } }, // P42
+    { 5, 0, { 0, 1 << 6, 1 << 7 } }, // P43
+    { 5, 0, { 0, 1 << 4, 1 << 5 } }, // P44
+    { 5, 0, { 0, 1 << 2, 1 << 3 } }, // P45
   };
   // @format:on
 
@@ -257,7 +260,7 @@ static void padscfg_to_portcfg(allpads_t * pads, uint8_t port[6][2])
   PADCFG(15, pads->row[0].c_lft);
   PADCFG(13, pads->row[0].c_mid);
   PADCFG(11, pads->row[0].c_rgt);
-  PADCFG(12, pads->row[0].c_bot);
+  PADCFG(12, pads->row[0].c_bot); // here
 
   PADCFG(39, pads->row[1].a_top);
   PADCFG(40, pads->row[1].a_lft);
@@ -298,10 +301,26 @@ static void padscfg_to_portcfg(allpads_t * pads, uint8_t port[6][2])
 #undef PADCFG
 }
 
-static void apply_padscfg(allpads_t * pads)
+extern const char *bit_rep[16];
+
+static void apply_padscfg(allpads_t *pads)
 {
-  uint8_t port[6][2] = {0};
+  uint8_t port[6][2] =
+  { 0 };
   padscfg_to_portcfg(pads, port);
+
+  printf("port=");
+  for (int i = 0; i < 6; i++)
+  {
+    printf("%s%s,%s%s", bit_rep[port[i][1] >> 4], bit_rep[port[i][1] & 0x0F],
+        bit_rep[port[i][0] >> 4], bit_rep[port[i][0] & 0x0F]);
+    if (i < 5)
+    {
+      printf("; ");
+    }
+  }
+  printf("\r\n");
+
   TCA9555_UpdateOutput(port);
 }
 
@@ -333,26 +352,27 @@ void do_profile(int index)
   }
 }
 
-int level_to_dac_in_mv(int level)
-{
-  if (level >= 100)
-  {
-    return 0;
-  }
-
-  if (level <= 0)
-  {
-    return 700;
-  }
-
-  return (100 - level) * 7;
-}
+//int level_to_dac_in_mv(int level)
+//{
+//  if (level >= 100)
+//  {
+//    return 0;
+//  }
+//
+//  if (level <= 0)
+//  {
+//    return 700;
+//  }
+//
+//  return (100 - level) * 7;
+//}
 
 void StartProfileTask(void const *argument)
 {
   HAL_StatusTypeDef status;
-  int dac_in_mv;
-  printf("\r\n\r\n---- boot ----\r\n");
+
+  printf("\r\n\r\n---- ttf boot ---- \r\n");
+  printf("version: 1.0.0-20250421\r\n");
 
   TCA9555_Init_All();
   TCA9555_Dump();
@@ -370,8 +390,7 @@ void StartProfileTask(void const *argument)
   DDS_Start();
   DAC_Start();
 
-  DAC_SetOutput_Percent(10);
-
+  DAC_SetOutput_Percent(0);
 
   vTaskDelay(100);
 
@@ -385,6 +404,7 @@ entry_point:
     apply_padscfg(&CURR_PROFILE.a.pads);
     // dac_in_mv = level_to_dac_in_mv(CURR_PROFILE.a.level);
     // DAC_Update(dac_in_mv);
+    DAC_SetOutput_Percent(CURR_PROFILE.a.level);
     dur = CURR_PROFILE.a.duration * 1000;
     if (dur == 0)
       dur = portMAX_DELAY;
@@ -397,6 +417,7 @@ entry_point:
     apply_padscfg(&CURR_PROFILE.b.pads);
     // dac_in_mv = level_to_dac_in_mv(CURR_PROFILE.b.level);
     // DAC_Update(level_to_dac_in_mv(CURR_PROFILE.b.level));
+    DAC_SetOutput_Percent(CURR_PROFILE.b.level);
     dur = CURR_PROFILE.b.duration *1000;
     if (dur == 0)
       dur = portMAX_DELAY;

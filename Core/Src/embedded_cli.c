@@ -916,7 +916,7 @@ static void printBindingHelp(EmbeddedCli *cli, CliCommandBinding *binding) {
 static void initInternalBindings(EmbeddedCli *cli) {
     CliCommandBinding b = {
             "help",
-            "Print list of commands",
+            "Print list of commands. Commands listed after reboot are for debugging only.",
             true,
             NULL,
             onHelp
