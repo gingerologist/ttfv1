@@ -372,7 +372,8 @@ void StartProfileTask(void const *argument)
   HAL_StatusTypeDef status;
 
   printf("\r\n\r\n---- ttf boot ---- \r\n");
-  printf("version: 1.0.0-20250421\r\n");
+  printf("version: 1.0.1-20250428\r\n");
+  printf("  - use TCA9555_VerifiedWriteReg to detect i2c write failure.\r\n\r\n");
 
   TCA9555_Init_All();
   TCA9555_Dump();

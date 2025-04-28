@@ -324,6 +324,34 @@ void TCA9555_Dump(void)
   }
 }
 
+HAL_StatusTypeDef TCA9555_VerifiedWriteReg(uint8_t dev_idx, uint8_t reg, uint8_t value)
+{
+  HAL_StatusTypeDef status;
+  uint8_t readback;
+
+  status = TCA9555_WriteReg(dev_idx, reg, value);
+  if (status != HAL_OK)
+  {
+    printf(">>> TCA9555 WRITE ERROR <<<<\r\n");
+    return status;
+  }
+
+  status = TCA9555_ReadReg(dev_idx, reg, &readback);
+  if (status != HAL_OK)
+  {
+    printf(">>> TCA9555 READ ERROR <<<<\r\n");
+    return status;
+  }
+
+  if (value != readback)
+  {
+    printf(">>> TCA9555 MISMATCH, written: %02x, read: %02x <<<<\r\n", value, readback);
+    return HAL_ERROR;
+  }
+
+  return HAL_OK;
+}
+
 /**
  *
  */
@@ -331,8 +359,8 @@ void TCA9555_UpdateOutput(uint8_t port[6][2])
 {
   for (int i = 0; i < 6; i++)
   {
-    TCA9555_WriteReg(i, TCA9555_REG_OUTPUT_PORT0, 0);
-    TCA9555_WriteReg(i, TCA9555_REG_OUTPUT_PORT1, 0);
+    TCA9555_VerifiedWriteReg(i, TCA9555_REG_OUTPUT_PORT0, 0);
+    TCA9555_VerifiedWriteReg(i, TCA9555_REG_OUTPUT_PORT1, 0);
   }
 
   vTaskDelay(50);   // FreeRTOS.h, task.h
@@ -340,7 +368,7 @@ void TCA9555_UpdateOutput(uint8_t port[6][2])
 
   for (int i = 0; i < 6; i++)
   {
-    TCA9555_WriteReg(i, TCA9555_REG_OUTPUT_PORT0, port[i][0]);
-    TCA9555_WriteReg(i, TCA9555_REG_OUTPUT_PORT1, port[i][1]);
+    TCA9555_VerifiedWriteReg(i, TCA9555_REG_OUTPUT_PORT0, port[i][0]);
+    TCA9555_VerifiedWriteReg(i, TCA9555_REG_OUTPUT_PORT1, port[i][1]);
   }
 }
