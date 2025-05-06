@@ -363,8 +363,8 @@ void TCA9555_UpdateOutput(uint8_t port[6][2])
     TCA9555_VerifiedWriteReg(i, TCA9555_REG_OUTPUT_PORT1, 0);
   }
 
-  vTaskDelay(50);   // FreeRTOS.h, task.h
-  // osDelay(50);   // cmsis_os.h
+  // vTaskDelay(1);   // FreeRTOS.h, task.h
+  // osDelay(1);   // cmsis_os.h
 
   for (int i = 0; i < 6; i++)
   {

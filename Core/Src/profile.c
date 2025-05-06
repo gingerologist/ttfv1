@@ -402,6 +402,9 @@ entry_point:
   {
     uint32_t dur;
 
+    DAC_SetOutput_Percent(0);
+    vTaskDelay(1);
+
     apply_padscfg(&CURR_PROFILE.a.pads);
     // dac_in_mv = level_to_dac_in_mv(CURR_PROFILE.a.level);
     // DAC_Update(dac_in_mv);
@@ -414,6 +417,9 @@ entry_point:
     {
       goto entry_point;
     }
+
+    DAC_SetOutput_Percent(0);
+    vTaskDelay(1);
 
     apply_padscfg(&CURR_PROFILE.b.pads);
     // dac_in_mv = level_to_dac_in_mv(CURR_PROFILE.b.level);

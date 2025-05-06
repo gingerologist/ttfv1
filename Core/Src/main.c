@@ -128,8 +128,10 @@ void DDS_Start(void)
 {
   uint16_t data[5] =
   { 0x2100,   // Control word: B28=1, RESET=1
-    0x449C,   // FREQLW
-    0x4083,   // FREQHW
+    // 0x4674,
+    0x449C,   // FREQLW for 200KHz
+    // 0x4034,
+    0x4083,   // FREQHW for 200KHz
     0xC000,   // Phase register
     0x2000 }; // Control word: B28=1, RESET=0 (enable output)
 
