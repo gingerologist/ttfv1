@@ -64,11 +64,15 @@ _Static_assert(sizeof(allpads_t) == 12, "allpads_t size not 12");
 typedef struct
 {
   allpads_t pads;
-  int duration;      // max 3600
-  int level;         // max 100
+  uint32_t freq;      // frequency 5000 to 500,000
+  int duration;       // max 3600
+  int level;          // max 100
 } phase_t;
 
-_Static_assert(sizeof(phase_t) == 20, "phase_t size not 20");
+_Static_assert(sizeof(phase_t) == 24, "phase_t size not 20");
+
+#define DDS_MAX_FREQ        500000
+#define DDS_MIN_FREQ          5000
 
 // each profile contains two phases.
 typedef union
@@ -81,7 +85,7 @@ typedef union
   };
 } profile_t;
 
-_Static_assert(sizeof(profile_t) == 40, "profile_t size not 40");
+_Static_assert(sizeof(profile_t) == 48, "profile_t size not 40");
 
 void print_profile(int index);
 

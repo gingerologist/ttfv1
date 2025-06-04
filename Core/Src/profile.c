@@ -122,12 +122,12 @@ void print_profile(int i)
   }
 
   print_allpads_str(&profile[i].a.pads, str);
-  printf("Profile #%02d phase a: %s in %d seconds at %d volts\r\n", i, str,
-      profile[i].a.duration, profile[i].a.level);
+  printf("Profile #%02d phase a: %s in %d seconds at %d volts and %lu Hz\r\n", i, str,
+      profile[i].a.duration, profile[i].a.level, profile[i].a.freq);
 
   print_allpads_str(&profile[i].b.pads, str);
-  printf("            phase b: %s in %d seconds at %d volts\r\n", str,
-      profile[i].b.duration, profile[i].b.level);
+  printf("            phase b: %s in %d seconds at %d volts and %lu Hz\r\n", str,
+      profile[i].b.duration, profile[i].b.level, profile[i].b.freq);
 }
 
 profile_t get_profile(int index)
@@ -371,6 +371,11 @@ void StartProfileTask(void const *argument)
 {
   HAL_StatusTypeDef status;
 
+  uint32_t test = DDS_FreqReg(200000);
+  printf("\r\n\r\n---- test freq reg ----\r\n");
+  printf("200KHz, hi reg 16bit is 0x%04x\r\n", (uint16_t)(test >> 16));
+  printf("200KHz, lo reg 16bit is 0x%04x\r\n", (uint16_t)test);
+
   printf("\r\n\r\n---- ttf boot ---- \r\n");
   printf("version: 1.0.1-20250428\r\n");
   printf("  - use TCA9555_VerifiedWriteReg to detect i2c write failure.\r\n\r\n");
@@ -388,7 +393,7 @@ void StartProfileTask(void const *argument)
     printf("no profiles stored in flash\r\n");
   }
 
-  DDS_Start();
+  DDS_Start(200000);
   DAC_Start();
 
   DAC_SetOutput_Percent(0);
@@ -403,6 +408,7 @@ entry_point:
     uint32_t dur;
 
     DAC_SetOutput_Percent(0);
+    DDS_Start(CURR_PROFILE.a.freq);
     vTaskDelay(1);
 
     apply_padscfg(&CURR_PROFILE.a.pads);
@@ -419,6 +425,7 @@ entry_point:
     }
 
     DAC_SetOutput_Percent(0);
+    DDS_Start(CURR_PROFILE.b.freq);
     vTaskDelay(1);
 
     apply_padscfg(&CURR_PROFILE.b.pads);
@@ -497,11 +504,11 @@ static HAL_StatusTypeDef erase_sector_3(void)
 
 
 
-#define SIZE_OF_PROFILE_IN_WORD         10
+#define SIZE_OF_PROFILE_IN_WORD         12
 #define SIZE_OF_PROFILES                (sizeof(profile_t) * NUM_OF_PROFILES)
 #define SIZE_OF_PROFILES_IN_WORD        (SIZE_OF_PROFILES / 4)
 
-#define DEBUG_WRITING_EVERY_N_WORDS     10
+#define DEBUG_WRITING_EVERY_N_WORDS     12
 
 static HAL_StatusTypeDef save_profiles(void)
 {

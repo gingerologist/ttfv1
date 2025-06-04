@@ -303,6 +303,30 @@ static bool parse_phase_level(const char *p, int *level)
   return true;
 }
 
+static bool parse_phase_freq(const char *p, uint32_t *freq)
+{
+  char *endptr;
+  long value;
+
+  // Check for null pointer
+  if (p == NULL || freq == NULL)
+    return false;
+
+  // Convert string to long integer
+  value = strtol(p, &endptr, 10);
+
+  // Check that the entire string was consumed (valid number only)
+  if (*endptr != '\0')
+    return false;
+
+  // Check range
+  if (value < 5000 || value > 500000)
+    return false;
+
+  *freq = (int) value;
+  return true;
+}
+
 /*
  * example:
  *  define 1 a 11111,11111,11111;22222,22222,22222;00000,00000,00000 33 100
@@ -322,10 +346,9 @@ static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context)
 
   uint16_t count = embeddedCliGetTokenCount(args);
 
-  if (count != 5)
+  if (count != 6)
   {
-    // print_line();
-    printf("error: define command requires exact 4 arguments.\r\n");
+    printf("error: define command requires exact 5 arguments.\r\n");
     return;
   }
 
@@ -364,6 +387,13 @@ static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context)
     return;
   }
 
+  p = embeddedCliGetToken(args, 6);
+  if (!parse_phase_freq(p, &phase.freq))
+  {
+    printf("error: invalid phase frequency.\r\n");
+    return;
+  }
+
   set_profile_phase(profile_index, phase_index, &phase);
 
   print_profile(profile_index);
@@ -372,8 +402,10 @@ static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context)
 CliCommandBinding cli_cmd_define_binding =
 { "define",
   "Define a profile. Example:\r\n"
-  "        > define 0 a 11111,11111,11111;22222,22222,22222;00000,00000,00000 30 100\r\n"
-  "        > define 15 b 11111,11111,11111;22222,22222,22222;00000,00000,00000 3600 10\r\n",
+  "        # define profile 0, phase a, with 30 seconds, 100% voltage, and 5000 Hz\r\n\r\n"
+  "        > define 0 a 11111,11111,11111;22222,22222,22222;00000,00000,00000 30 100 5000\r\n\r\n"
+  "        # define profile 15, phase b, with 3600 seconds, 10% voltage, and 500 KHz\r\n\r\n"
+  "        > define 15 b 11111,11111,11111;22222,22222,22222;00000,00000,00000 3600 10 500000\r\n\r\n",
   true,
   NULL,
   CLI_CMD_Define };

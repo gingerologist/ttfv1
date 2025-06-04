@@ -21,6 +21,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <math.h>
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -112,9 +113,31 @@ int _write(int file, char *ptr, int len)
   return -1;
 }
 
+/*
+---- test freq reg ----
+200KHz, hi reg 16bit is 0x4083
+200KHz, lo reg 16bit is 0x449b
+
+ */
+
+//  uint64_t test = DDS_FreqReg(200000);
+//  printf("\r\n\r\n---- test freq reg ----\r\n");
+//  printf("200KHz -> uint64_t, high 32bit is 0x%08x\r\n", (uint32_t)(test >> 32));
+//  printf("200KHz -> uint64_t,  low 32bit is 0x%08x\r\n", (uint32_t)test);
+uint32_t DDS_FreqReg(double f_out)
+{
+  uint32_t f32 = (uint32_t)round(f_out * 10.73741824);
+  uint32_t lo = (f32 & 0x00003fff) | 0x00004000;
+  uint32_t hi = (((f32 << 2) & 0xffff0000)) | 0x40000000;
+
+  return hi | lo;
+}
+
 /**
 * @brief  Initializes and starts the AD9834 DDS (Direct Digital Synthesis) chip
 * @retval None
+*
+* https://www.analog.com/en/resources/app-notes/an-1070.html
 *
 * @note   This function configures and enables the AD9834 DDS chip from Analog Devices
 *         by sending the following sequence via SPI:
@@ -124,14 +147,16 @@ int _write(int file, char *ptr, int len)
 *         4. Phase register configuration
 *         5. Control word with B28=1 and RESET=0 (maintain config, enable output)
 */
-void DDS_Start(void)
+void DDS_Start(uint32_t freq)
 {
+  uint32_t freq_reg = DDS_FreqReg((double)freq);
+
   uint16_t data[5] =
   { 0x2100,   // Control word: B28=1, RESET=1
-    // 0x4674,
-    0x449C,   // FREQLW for 200KHz
-    // 0x4034,
-    0x4083,   // FREQHW for 200KHz
+    (uint16_t)(freq_reg & 0x0000FFFF),
+    // 0x449C,   // FREQLW for 200KHz
+    (uint16_t)((freq_reg >> 16) & 0x0000FFFF),
+    // 0x4083,   // FREQHW for 200KHz
     0xC000,   // Phase register
     0x2000 }; // Control word: B28=1, RESET=0 (enable output)
 
