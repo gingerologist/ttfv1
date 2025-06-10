@@ -147,18 +147,27 @@ uint32_t DDS_FreqReg(double f_out)
 *         4. Phase register configuration
 *         5. Control word with B28=1 and RESET=0 (maintain config, enable output)
 */
-void DDS_Start(uint32_t freq)
+void DDS_Start(uint32_t freq, bool dry_run)
 {
+  if (freq < 10000)
+  {
+    freq = 10000;
+  }
+
   uint32_t freq_reg = DDS_FreqReg((double)freq);
+  uint16_t freq_lo = (uint16_t)(freq_reg & 0x0000FFFF);
+  uint16_t freq_hi = ((uint16_t)((freq_reg >> 16) & 0x0000FFFF));
 
   uint16_t data[5] =
   { 0x2100,   // Control word: B28=1, RESET=1
-    (uint16_t)(freq_reg & 0x0000FFFF),
+    freq_lo,
     // 0x449C,   // FREQLW for 200KHz
-    (uint16_t)((freq_reg >> 16) & 0x0000FFFF),
+    freq_hi,
     // 0x4083,   // FREQHW for 200KHz
     0xC000,   // Phase register
     0x2000 }; // Control word: B28=1, RESET=0 (enable output)
+
+  printf("freq: %lu, lo: 0x%04x, hi: 0x%04x\r\n", freq, freq_lo, freq_hi);
 
   for (int i = 0; i < 5; i++)
   {
@@ -219,6 +228,8 @@ void DAC_SetOutput_Percent(uint32_t percentage)
     // Write value to DAC channel 1
     // DAC_SetChannel1Data(DAC_Align_12b_R, dac_value);
     HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, value);
+
+    printf("DAC out percentage: %lu, value: %lu\r\n", percentage, value);
 
     // Start DAC Channel1
     // DAC_Cmd(DAC_Channel_1, ENABLE);

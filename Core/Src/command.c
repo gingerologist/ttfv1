@@ -319,10 +319,6 @@ static bool parse_phase_freq(const char *p, uint32_t *freq)
   if (*endptr != '\0')
     return false;
 
-  // Check range
-  if (value < 5000 || value > 500000)
-    return false;
-
   *freq = (int) value;
   return true;
 }
@@ -391,6 +387,13 @@ static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context)
   if (!parse_phase_freq(p, &phase.freq))
   {
     printf("error: invalid phase frequency.\r\n");
+    return;
+  }
+
+  // Check range
+  if (phase.freq < 50000 || phase.freq > 500000)
+  {
+    printf("error: invalid frequency range (50000 to 500000).\r\n");
     return;
   }
 

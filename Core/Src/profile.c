@@ -393,22 +393,26 @@ void StartProfileTask(void const *argument)
     printf("no profiles stored in flash\r\n");
   }
 
-  DDS_Start(200000);
+  DDS_Start(100000, false);
+  vTaskDelay(100);
+
   DAC_Start();
 
-  DAC_SetOutput_Percent(0);
+  DAC_SetOutput_Percent(10);
 
   vTaskDelay(100);
 
 entry_point:
   CURR_PROFILE= NEXT_PROFILE;
+  DDS_Start(CURR_PROFILE.a.freq, false);
+  vTaskDelay(100);
 
   for (;;)
   {
     uint32_t dur;
 
     DAC_SetOutput_Percent(0);
-    DDS_Start(CURR_PROFILE.a.freq);
+
     vTaskDelay(1);
 
     apply_padscfg(&CURR_PROFILE.a.pads);
@@ -425,7 +429,7 @@ entry_point:
     }
 
     DAC_SetOutput_Percent(0);
-    DDS_Start(CURR_PROFILE.b.freq);
+
     vTaskDelay(1);
 
     apply_padscfg(&CURR_PROFILE.b.pads);

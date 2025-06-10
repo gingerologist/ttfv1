@@ -32,6 +32,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdarg.h>
 /* USER CODE END Includes */
@@ -56,7 +57,7 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 uint32_t DDS_FreqReg(double f_out);
-void DDS_Start(uint32_t freq);
+void DDS_Start(uint32_t freq, bool dry_run);
 
 void DAC_Start(void);
 // void DAC_Update(uint32_t mv);
