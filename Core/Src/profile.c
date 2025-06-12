@@ -309,17 +309,17 @@ static void apply_padscfg(allpads_t *pads)
   { 0 };
   padscfg_to_portcfg(pads, port);
 
-  printf("port=");
-  for (int i = 0; i < 6; i++)
-  {
-    printf("%s%s,%s%s", bit_rep[port[i][1] >> 4], bit_rep[port[i][1] & 0x0F],
-        bit_rep[port[i][0] >> 4], bit_rep[port[i][0] & 0x0F]);
-    if (i < 5)
-    {
-      printf("; ");
-    }
-  }
-  printf("\r\n");
+//  printf("port=");
+//  for (int i = 0; i < 6; i++)
+//  {
+//    printf("%s%s,%s%s", bit_rep[port[i][1] >> 4], bit_rep[port[i][1] & 0x0F],
+//        bit_rep[port[i][0] >> 4], bit_rep[port[i][0] & 0x0F]);
+//    if (i < 5)
+//    {
+//      printf("; ");
+//    }
+//  }
+//  printf("\r\n");
 
   TCA9555_UpdateOutput(port);
 }
@@ -398,50 +398,45 @@ void StartProfileTask(void const *argument)
 
   DAC_Start();
 
-  DAC_SetOutput_Percent(10);
+  DAC_SetOutput_Percent(0);
 
   vTaskDelay(100);
 
 entry_point:
+
   CURR_PROFILE= NEXT_PROFILE;
   DDS_Start(CURR_PROFILE.a.freq, false);
-  vTaskDelay(100);
+  vTaskDelay(500);
 
   for (;;)
   {
     uint32_t dur;
 
-    DAC_SetOutput_Percent(0);
-
-    vTaskDelay(1);
-
+    // DAC_SetOutput_Percent(0);
     apply_padscfg(&CURR_PROFILE.a.pads);
-    // dac_in_mv = level_to_dac_in_mv(CURR_PROFILE.a.level);
-    // DAC_Update(dac_in_mv);
     DAC_SetOutput_Percent(CURR_PROFILE.a.level);
+
     dur = CURR_PROFILE.a.duration * 1000;
     if (dur == 0)
       dur = portMAX_DELAY;
 
     if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, dur))
     {
+      printf("goto from a\r\n");
       goto entry_point;
     }
 
-    DAC_SetOutput_Percent(0);
-
-    vTaskDelay(1);
-
+    // DAC_SetOutput_Percent(0);
     apply_padscfg(&CURR_PROFILE.b.pads);
-    // dac_in_mv = level_to_dac_in_mv(CURR_PROFILE.b.level);
-    // DAC_Update(level_to_dac_in_mv(CURR_PROFILE.b.level));
-    DAC_SetOutput_Percent(CURR_PROFILE.b.level);
-    dur = CURR_PROFILE.b.duration *1000;
+    DAC_SetOutput_Percent(CURR_PROFILE.a.level);
+
+    dur = CURR_PROFILE.b.duration * 1000;
     if (dur == 0)
       dur = portMAX_DELAY;
 
     if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, dur))
     {
+      printf("goto from b\r\n");
       goto entry_point;
     }
   }

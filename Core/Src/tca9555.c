@@ -357,14 +357,15 @@ HAL_StatusTypeDef TCA9555_VerifiedWriteReg(uint8_t dev_idx, uint8_t reg, uint8_t
  */
 void TCA9555_UpdateOutput(uint8_t port[6][2])
 {
+  printf("bb\r\n");
   for (int i = 0; i < 6; i++)
   {
     TCA9555_VerifiedWriteReg(i, TCA9555_REG_OUTPUT_PORT0, 0);
     TCA9555_VerifiedWriteReg(i, TCA9555_REG_OUTPUT_PORT1, 0);
   }
 
-  // vTaskDelay(1);   // FreeRTOS.h, task.h
-  // osDelay(1);   // cmsis_os.h
+  vTaskDelay(5);
+  printf("aa\r\n");
 
   for (int i = 0; i < 6; i++)
   {

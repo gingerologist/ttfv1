@@ -211,28 +211,37 @@ void DAC_Start(void)
  */
 void DAC_SetOutput_Percent(uint32_t percentage)
 {
-    // Validate input range
-    if (percentage > 100)
-        percentage = 100;
+  static uint32_t last_percentage = 0;
 
-    // Calculate DAC value
-    // STM32F405 has 12-bit DAC (0-4095)
-    // VREF = 3.3V
-    // For 0% -> 1150mV (value = 1150/3300*4095)
-    // For 100% -> 0V (value = 0)
-    // Linear interpolation for values in between
+  // Validate input range
+  if (percentage > 100)
+  {
+    percentage = 100;
+  }
 
-    // 1150mV corresponds to DAC value of 1426 (1150/3300*4095)
-    uint32_t value = 1426 - (percentage * 1426 / 100);
+  if (percentage == last_percentage)
+  {
+    return;
+  }
 
-    // Write value to DAC channel 1
-    // DAC_SetChannel1Data(DAC_Align_12b_R, dac_value);
-    HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, value);
+  // Calculate DAC value
+  // STM32F405 has 12-bit DAC (0-4095)
+  // VREF = 3.3V
+  // For 0% -> 1150mV (value = 1150/3300*4095)
+  // For 100% -> 0V (value = 0)
+  // Linear interpolation for values in between
 
-    printf("DAC out percentage: %lu, value: %lu\r\n", percentage, value);
+  // 1150mV corresponds to DAC value of 1426 (1150/3300*4095)
+  uint32_t value = 1426 - (percentage * 1426 / 100);
 
-    // Start DAC Channel1
-    // DAC_Cmd(DAC_Channel_1, ENABLE);
+  // Write value to DAC channel 1
+  // DAC_SetChannel1Data(DAC_Align_12b_R, dac_value);
+  HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, value);
+
+  // printf("DAC out percentage: %lu, value: %lu\r\n", percentage, value);
+
+  // Start DAC Channel1
+  // DAC_Cmd(DAC_Channel_1, ENABLE);
 }
 
 /* USER CODE END 0 */
@@ -455,7 +464,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.ClockSpeed = 400000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
