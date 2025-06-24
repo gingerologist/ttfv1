@@ -211,18 +211,18 @@ void DAC_Start(void)
  */
 void DAC_SetOutput_Percent(uint32_t percentage)
 {
-  static uint32_t last_percentage = 0;
-
-  // Validate input range
-  if (percentage > 100)
-  {
-    percentage = 100;
-  }
-
-  if (percentage == last_percentage)
-  {
-    return;
-  }
+//  static uint32_t last_percentage = 0;
+//
+//  // Validate input range
+//  if (percentage > 100)
+//  {
+//    percentage = 100;
+//  }
+//
+//  if (percentage == last_percentage)
+//  {
+//    return;
+//  }
 
   // Calculate DAC value
   // STM32F405 has 12-bit DAC (0-4095)
@@ -232,7 +232,13 @@ void DAC_SetOutput_Percent(uint32_t percentage)
   // Linear interpolation for values in between
 
   // 1150mV corresponds to DAC value of 1426 (1150/3300*4095)
-  uint32_t value = 1426 - (percentage * 1426 / 100);
+  // 1150mV 1426
+  // 1180mV 1464 <- nominal value
+  // 1200mV 1489
+  // 1210mV 1502 <- (nominal + max) / 2
+  // 1240mV 1539
+  // 1250mV 1551
+  uint32_t value = 1502 - (percentage * 1502 / 100);
 
   // Write value to DAC channel 1
   // DAC_SetChannel1Data(DAC_Align_12b_R, dac_value);
@@ -242,6 +248,52 @@ void DAC_SetOutput_Percent(uint32_t percentage)
 
   // Start DAC Channel1
   // DAC_Cmd(DAC_Channel_1, ENABLE);
+}
+
+void PA4_GPIO_High(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+
+  // HAL_GPIO_DeInit(GPIOA, GPIO_PIN_4);
+  HAL_DAC_Stop(&hdac, DAC_CHANNEL_1);
+
+  // Method 2: Set output register BEFORE HAL_GPIO_Init (avoids glitch)
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);  // Pre-load output register
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+}
+
+void PA4_Restore_DAC(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  HAL_GPIO_DeInit(GPIOA, GPIO_PIN_4);
+
+  // Reconfigure PA4 back to analog mode for DAC
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  // The DAC should now control the pin again
+  // Optionally write a new value to ensure proper output:
+  // HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, your_dac_value);
+}
+
+void DAC_Disable(void)
+{
+  // Stop: Clear the EN bit
+  hdac.Instance->CR &= ~DAC_CR_EN1;  // For channel 1
+}
+
+void DAC_Enable(void)
+{
+  // Restart: Set the EN bit
+  hdac.Instance->CR |= DAC_CR_EN1;   // For channel 1
 }
 
 /* USER CODE END 0 */
@@ -358,8 +410,8 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 25;
-  RCC_OscInitStruct.PLL.PLLN = 256;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
+  RCC_OscInitStruct.PLL.PLLN = 336;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -372,10 +424,10 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     Error_Handler();
   }

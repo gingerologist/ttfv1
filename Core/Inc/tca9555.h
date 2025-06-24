@@ -24,7 +24,9 @@ HAL_StatusTypeDef TCA9555_WriteReg(uint8_t dev_idx, uint8_t reg, uint8_t value);
 HAL_StatusTypeDef TCA9555_ReadReg(uint8_t dev_idx, uint8_t reg, uint8_t *value);
 HAL_StatusTypeDef TCA9555_Init_All(void);
 
-void TCA9555_Dump();
-void TCA9555_UpdateOutput(uint8_t port[6][2]);
+void TCA9555_Dump(void);
+void TCA9555_Break(void);
+void TCA9555_Make(uint8_t port[6][2]);
+// void TCA9555_UpdateOutput(uint8_t port[6][2]);
 
 #endif /* INC_TCA9555_H_ */

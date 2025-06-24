@@ -60,10 +60,7 @@ static HAL_StatusTypeDef load_profiles(void);
 
 /* Private function prototypes -----------------------------------------------*/
 
-
 /* Private user code ---------------------------------------------------------*/
-
-
 
 /* Public user code ---------------------------------------------------------*/
 
@@ -91,16 +88,16 @@ static void print_allpads_str(allpads_t *pads, char str[54])
 {
   for (int i = 0; i < 3; i++)
   {
-    str[i * 18 + 0]  = cfg2char(pads->row[i].a_top);
-    str[i * 18 + 1]  = cfg2char(pads->row[i].a_lft);
-    str[i * 18 + 2]  = cfg2char(pads->row[i].a_mid);
-    str[i * 18 + 3]  = cfg2char(pads->row[i].a_rgt);
-    str[i * 18 + 4]  = cfg2char(pads->row[i].a_bot);
-    str[i * 18 + 5]  = ',';
-    str[i * 18 + 6]  = cfg2char(pads->row[i].b_top);
-    str[i * 18 + 7]  = cfg2char(pads->row[i].b_lft);
-    str[i * 18 + 8]  = cfg2char(pads->row[i].b_mid);
-    str[i * 18 + 9]  = cfg2char(pads->row[i].b_rgt);
+    str[i * 18 + 0] = cfg2char(pads->row[i].a_top);
+    str[i * 18 + 1] = cfg2char(pads->row[i].a_lft);
+    str[i * 18 + 2] = cfg2char(pads->row[i].a_mid);
+    str[i * 18 + 3] = cfg2char(pads->row[i].a_rgt);
+    str[i * 18 + 4] = cfg2char(pads->row[i].a_bot);
+    str[i * 18 + 5] = ',';
+    str[i * 18 + 6] = cfg2char(pads->row[i].b_top);
+    str[i * 18 + 7] = cfg2char(pads->row[i].b_lft);
+    str[i * 18 + 8] = cfg2char(pads->row[i].b_mid);
+    str[i * 18 + 9] = cfg2char(pads->row[i].b_rgt);
     str[i * 18 + 10] = cfg2char(pads->row[i].b_bot);
     str[i * 18 + 11] = ',';
     str[i * 18 + 12] = cfg2char(pads->row[i].c_top);
@@ -122,23 +119,24 @@ void print_profile(int i)
   }
 
   print_allpads_str(&profile[i].a.pads, str);
-  printf("Profile #%02d phase a: %s in %d seconds at %d volts and %lu Hz\r\n", i, str,
-      profile[i].a.duration, profile[i].a.level, profile[i].a.freq);
+  printf("Profile #%02d phase a: %s in %d seconds at %d volts and %lu Hz\r\n",
+      i, str, profile[i].a.duration, profile[i].a.level, profile[i].a.freq);
 
   print_allpads_str(&profile[i].b.pads, str);
-  printf("            phase b: %s in %d seconds at %d volts and %lu Hz\r\n", str,
-      profile[i].b.duration, profile[i].b.level, profile[i].b.freq);
+  printf("            phase b: %s in %d seconds at %d volts and %lu Hz\r\n",
+      str, profile[i].b.duration, profile[i].b.level, profile[i].b.freq);
 }
 
 profile_t get_profile(int index)
 {
-  profile_t prfl = {0};
+  profile_t prfl =
+  { 0 };
 
-	if (index > -1 && index < 16)
-	{
-		return profile[index];
-	}
-	return prfl;
+  if (index > -1 && index < 16)
+  {
+    return profile[index];
+  }
+  return prfl;
 }
 
 void set_profile_phase(int profile_index, int phase_index, const phase_t *phase)
@@ -173,63 +171,243 @@ typedef struct
 /*
  * @brief apply pad configuration to ports
  */
-static void padscfg_to_portcfg(allpads_t * pads, uint8_t port[6][2])
+static void padscfg_to_portcfg(allpads_t *pads, uint8_t port[6][2])
 {
   // @format:off
   static const netmap_t nm[46] =
   {
     { },
-    { 0, 1, { 0, 1 << 7, 1 << 6 } }, // P01
-    { 0, 1, { 0, 1 << 5, 1 << 4 } }, // P02
-    { 0, 1, { 0, 1 << 3, 1 << 2 } }, // P03
-    { 0, 1, { 0, 1 << 1, 1 << 0 } }, // P04
-    { 0, 0, { 0, 1 << 6, 1 << 7 } }, // P05
-    { 0, 0, { 0, 1 << 4, 1 << 5 } }, // P06
-    { 0, 0, { 0, 1 << 2, 1 << 3 } }, // P07
-    { 0, 0, { 0, 1 << 0, 1 << 1 } }, // P08
+    { 0,
+      1,
+      { 0,
+        1 << 7,
+        1 << 6 } }, // P01
+    { 0,
+      1,
+      { 0,
+        1 << 5,
+        1 << 4 } }, // P02
+    { 0,
+      1,
+      { 0,
+        1 << 3,
+        1 << 2 } }, // P03
+    { 0,
+      1,
+      { 0,
+        1 << 1,
+        1 << 0 } }, // P04
+    { 0,
+      0,
+      { 0,
+        1 << 6,
+        1 << 7 } }, // P05
+    { 0,
+      0,
+      { 0,
+        1 << 4,
+        1 << 5 } }, // P06
+    { 0,
+      0,
+      { 0,
+        1 << 2,
+        1 << 3 } }, // P07
+    { 0,
+      0,
+      { 0,
+        1 << 0,
+        1 << 1 } }, // P08
 
-    { 1, 1, { 0, 1 << 7, 1 << 6 } }, // P09
-    { 1, 1, { 0, 1 << 5, 1 << 4 } }, // P10
-    { 1, 1, { 0, 1 << 3, 1 << 2 } }, // P11
-    { 1, 1, { 0, 1 << 1, 1 << 0 } }, // P12
-    { 1, 0, { 0, 1 << 6, 1 << 7 } }, // P13
-    { 1, 0, { 0, 1 << 4, 1 << 5 } }, // P14
-    { 1, 0, { 0, 1 << 2, 1 << 3 } }, // P15
+    { 1,
+      1,
+      { 0,
+        1 << 7,
+        1 << 6 } }, // P09
+    { 1,
+      1,
+      { 0,
+        1 << 5,
+        1 << 4 } }, // P10
+    { 1,
+      1,
+      { 0,
+        1 << 3,
+        1 << 2 } }, // P11
+    { 1,
+      1,
+      { 0,
+        1 << 1,
+        1 << 0 } }, // P12
+    { 1,
+      0,
+      { 0,
+        1 << 6,
+        1 << 7 } }, // P13
+    { 1,
+      0,
+      { 0,
+        1 << 4,
+        1 << 5 } }, // P14
+    { 1,
+      0,
+      { 0,
+        1 << 2,
+        1 << 3 } }, // P15
 
-    { 2, 1, { 0, 1 << 7, 1 << 6 } }, // P16
-    { 2, 1, { 0, 1 << 5, 1 << 4 } }, // P17
-    { 2, 1, { 0, 1 << 3, 1 << 2 } }, // P18
-    { 2, 1, { 0, 1 << 1, 1 << 0 } }, // P19
-    { 2, 0, { 0, 1 << 6, 1 << 7 } }, // P20
-    { 2, 0, { 0, 1 << 4, 1 << 5 } }, // P21
-    { 2, 0, { 0, 1 << 2, 1 << 3 } }, // P22
-    { 2, 0, { 0, 1 << 0, 1 << 1 } }, // P23
+    { 2,
+      1,
+      { 0,
+        1 << 7,
+        1 << 6 } }, // P16
+    { 2,
+      1,
+      { 0,
+        1 << 5,
+        1 << 4 } }, // P17
+    { 2,
+      1,
+      { 0,
+        1 << 3,
+        1 << 2 } }, // P18
+    { 2,
+      1,
+      { 0,
+        1 << 1,
+        1 << 0 } }, // P19
+    { 2,
+      0,
+      { 0,
+        1 << 6,
+        1 << 7 } }, // P20
+    { 2,
+      0,
+      { 0,
+        1 << 4,
+        1 << 5 } }, // P21
+    { 2,
+      0,
+      { 0,
+        1 << 2,
+        1 << 3 } }, // P22
+    { 2,
+      0,
+      { 0,
+        1 << 0,
+        1 << 1 } }, // P23
 
-    { 3, 1, { 0, 1 << 7, 1 << 6 } }, // P24
-    { 3, 1, { 0, 1 << 5, 1 << 4 } }, // P25
-    { 3, 1, { 0, 1 << 3, 1 << 2 } }, // P26
-    { 3, 1, { 0, 1 << 1, 1 << 0 } }, // P27
-    { 3, 0, { 0, 1 << 6, 1 << 7 } }, // P28
-    { 3, 0, { 0, 1 << 4, 1 << 5 } }, // P29
-    { 3, 0, { 0, 1 << 2, 1 << 3 } }, // P30
+    { 3,
+      1,
+      { 0,
+        1 << 7,
+        1 << 6 } }, // P24
+    { 3,
+      1,
+      { 0,
+        1 << 5,
+        1 << 4 } }, // P25
+    { 3,
+      1,
+      { 0,
+        1 << 3,
+        1 << 2 } }, // P26
+    { 3,
+      1,
+      { 0,
+        1 << 1,
+        1 << 0 } }, // P27
+    { 3,
+      0,
+      { 0,
+        1 << 6,
+        1 << 7 } }, // P28
+    { 3,
+      0,
+      { 0,
+        1 << 4,
+        1 << 5 } }, // P29
+    { 3,
+      0,
+      { 0,
+        1 << 2,
+        1 << 3 } }, // P30
 
-    { 4, 1, { 0, 1 << 7, 1 << 6 } }, // P31
-    { 4, 1, { 0, 1 << 5, 1 << 4 } }, // P32
-    { 4, 1, { 0, 1 << 3, 1 << 2 } }, // P33
-    { 4, 1, { 0, 1 << 1, 1 << 0 } }, // P34
-    { 4, 0, { 0, 1 << 6, 1 << 7 } }, // P35
-    { 4, 0, { 0, 1 << 4, 1 << 5 } }, // P36
-    { 4, 0, { 0, 1 << 2, 1 << 3 } }, // P37
-    { 4, 0, { 0, 1 << 0, 1 << 1 } }, // P38
+    { 4,
+      1,
+      { 0,
+        1 << 7,
+        1 << 6 } }, // P31
+    { 4,
+      1,
+      { 0,
+        1 << 5,
+        1 << 4 } }, // P32
+    { 4,
+      1,
+      { 0,
+        1 << 3,
+        1 << 2 } }, // P33
+    { 4,
+      1,
+      { 0,
+        1 << 1,
+        1 << 0 } }, // P34
+    { 4,
+      0,
+      { 0,
+        1 << 6,
+        1 << 7 } }, // P35
+    { 4,
+      0,
+      { 0,
+        1 << 4,
+        1 << 5 } }, // P36
+    { 4,
+      0,
+      { 0,
+        1 << 2,
+        1 << 3 } }, // P37
+    { 4,
+      0,
+      { 0,
+        1 << 0,
+        1 << 1 } }, // P38
 
-    { 5, 1, { 0, 1 << 7, 1 << 6 } }, // P39
-    { 5, 1, { 0, 1 << 5, 1 << 4 } }, // P40
-    { 5, 1, { 0, 1 << 3, 1 << 2 } }, // P41
-    { 5, 1, { 0, 1 << 1, 1 << 0 } }, // P42
-    { 5, 0, { 0, 1 << 6, 1 << 7 } }, // P43
-    { 5, 0, { 0, 1 << 4, 1 << 5 } }, // P44
-    { 5, 0, { 0, 1 << 2, 1 << 3 } }, // P45
-  };
+    { 5,
+      1,
+      { 0,
+        1 << 7,
+        1 << 6 } }, // P39
+    { 5,
+      1,
+      { 0,
+        1 << 5,
+        1 << 4 } }, // P40
+    { 5,
+      1,
+      { 0,
+        1 << 3,
+        1 << 2 } }, // P41
+    { 5,
+      1,
+      { 0,
+        1 << 1,
+        1 << 0 } }, // P42
+    { 5,
+      0,
+      { 0,
+        1 << 6,
+        1 << 7 } }, // P43
+    { 5,
+      0,
+      { 0,
+        1 << 4,
+        1 << 5 } }, // P44
+    { 5,
+      0,
+      { 0,
+        1 << 2,
+        1 << 3 } }, // P45
+      };
   // @format:on
 
   memset(port, 0, 12);
@@ -274,11 +452,11 @@ static void padscfg_to_portcfg(allpads_t * pads, uint8_t port[6][2])
   PADCFG(21, pads->row[1].b_rgt);
   PADCFG(22, pads->row[1].b_bot);
 
-  PADCFG( 9, pads->row[1].c_top);
+  PADCFG(9, pads->row[1].c_top);
   PADCFG(10, pads->row[1].c_lft);
-  PADCFG( 8, pads->row[1].c_mid);
-  PADCFG( 6, pads->row[1].c_rgt);
-  PADCFG( 7, pads->row[1].c_bot);
+  PADCFG(8, pads->row[1].c_mid);
+  PADCFG(6, pads->row[1].c_rgt);
+  PADCFG(7, pads->row[1].c_bot);
 
   PADCFG(34, pads->row[2].a_top);
   PADCFG(35, pads->row[2].a_lft);
@@ -292,37 +470,16 @@ static void padscfg_to_portcfg(allpads_t * pads, uint8_t port[6][2])
   PADCFG(16, pads->row[2].b_rgt);
   PADCFG(17, pads->row[2].b_bot);
 
-  PADCFG( 4, pads->row[2].c_top);
-  PADCFG( 5, pads->row[2].c_lft);
-  PADCFG( 3, pads->row[2].c_mid);
-  PADCFG( 1, pads->row[2].c_rgt);
-  PADCFG( 2, pads->row[2].c_bot);
+  PADCFG(4, pads->row[2].c_top);
+  PADCFG(5, pads->row[2].c_lft);
+  PADCFG(3, pads->row[2].c_mid);
+  PADCFG(1, pads->row[2].c_rgt);
+  PADCFG(2, pads->row[2].c_bot);
 
 #undef PADCFG
 }
 
 extern const char *bit_rep[16];
-
-static void apply_padscfg(allpads_t *pads)
-{
-  uint8_t port[6][2] =
-  { 0 };
-  padscfg_to_portcfg(pads, port);
-
-//  printf("port=");
-//  for (int i = 0; i < 6; i++)
-//  {
-//    printf("%s%s,%s%s", bit_rep[port[i][1] >> 4], bit_rep[port[i][1] & 0x0F],
-//        bit_rep[port[i][0] >> 4], bit_rep[port[i][0] & 0x0F]);
-//    if (i < 5)
-//    {
-//      printf("; ");
-//    }
-//  }
-//  printf("\r\n");
-
-  TCA9555_UpdateOutput(port);
-}
 
 void do_profile(int index)
 {
@@ -367,18 +524,69 @@ void do_profile(int index)
 //  return (100 - level) * 7;
 //}
 
+//static void apply_padscfg(allpads_t *pads)
+//{
+//  uint8_t port[6][2] =
+//  { 0 };
+//  padscfg_to_portcfg(pads, port);
+//
+////  printf("port=");
+////  for (int i = 0; i < 6; i++)
+////  {
+////    printf("%s%s,%s%s", bit_rep[port[i][1] >> 4], bit_rep[port[i][1] & 0x0F],
+////        bit_rep[port[i][0] >> 4], bit_rep[port[i][0] & 0x0F]);
+////    if (i < 5)
+////    {
+////      printf("; ");
+////    }
+////  }
+////  printf("\r\n");
+//
+//  TCA9555_UpdateOutput(port);
+//}
+
+// #define ZERO_VOLT_BEFORE_BREAK        (true)
+#define DELAY_BEFORE_BREAK            (1)
+#define DELAY_AFTER_BREAK             (0)
+
+static void optotriac_update(phase_t *phase)
+{
+  static uint8_t port[6][2];
+  padscfg_to_portcfg(&phase->pads, port);
+
+  // with buffer on, disable dac output directly
+  // makes output to middle voltage of VREF
+  DAC_Disable();
+
+  if (DELAY_BEFORE_BREAK > 0)
+    vTaskDelay(DELAY_BEFORE_BREAK);
+
+  // break
+  // TCA9555_Break();
+  // or direct make
+  TCA9555_Make(port);
+
+  if (DELAY_AFTER_BREAK > 0)
+    vTaskDelay(DELAY_AFTER_BREAK);
+
+  DAC_Enable();
+  DAC_SetOutput_Percent(phase->level);
+}
+
 void StartProfileTask(void const *argument)
 {
+
   HAL_StatusTypeDef status;
 
   uint32_t test = DDS_FreqReg(200000);
   printf("\r\n\r\n---- test freq reg ----\r\n");
-  printf("200KHz, hi reg 16bit is 0x%04x\r\n", (uint16_t)(test >> 16));
-  printf("200KHz, lo reg 16bit is 0x%04x\r\n", (uint16_t)test);
+  printf("200KHz, hi reg 16bit is 0x%04x\r\n", (uint16_t) (test >> 16));
+  printf("200KHz, lo reg 16bit is 0x%04x\r\n", (uint16_t) test);
 
   printf("\r\n\r\n---- ttf boot ---- \r\n");
   printf("version: 1.0.1-20250428\r\n");
-  printf("  - use TCA9555_VerifiedWriteReg to detect i2c write failure.\r\n\r\n");
+  printf(
+      "  - use TCA9555_VerifiedWriteReg to detect i2c write failure.\r\n\r\n");
 
   TCA9555_Init_All();
   TCA9555_Dump();
@@ -393,28 +601,25 @@ void StartProfileTask(void const *argument)
     printf("no profiles stored in flash\r\n");
   }
 
-  DDS_Start(100000, false);
-  vTaskDelay(100);
+  // DDS_Start(100000, false);
+  // vTaskDelay(100);
 
   DAC_Start();
-
   DAC_SetOutput_Percent(0);
 
-  vTaskDelay(100);
+  // vTaskDelay(100);
 
 entry_point:
 
   CURR_PROFILE= NEXT_PROFILE;
   DDS_Start(CURR_PROFILE.a.freq, false);
-  vTaskDelay(500);
+  vTaskDelay(100);
 
   for (;;)
   {
     uint32_t dur;
 
-    // DAC_SetOutput_Percent(0);
-    apply_padscfg(&CURR_PROFILE.a.pads);
-    DAC_SetOutput_Percent(CURR_PROFILE.a.level);
+    optotriac_update(&CURR_PROFILE.a);
 
     dur = CURR_PROFILE.a.duration * 1000;
     if (dur == 0)
@@ -426,9 +631,7 @@ entry_point:
       goto entry_point;
     }
 
-    // DAC_SetOutput_Percent(0);
-    apply_padscfg(&CURR_PROFILE.b.pads);
-    DAC_SetOutput_Percent(CURR_PROFILE.a.level);
+    optotriac_update(&CURR_PROFILE.b);
 
     dur = CURR_PROFILE.b.duration * 1000;
     if (dur == 0)
@@ -440,34 +643,6 @@ entry_point:
       goto entry_point;
     }
   }
-/*
-entry_point:
-  CURR_PROFILE = NEXT_PROFILE;
-
-  for (;;)
-  {
-    uint32_t dur;
-
-    update_all_switches(CURR_PROFILE.pgcfg_a);
-    dur = CURR_PROFILE.duration_a_sec * 1000;
-    if (dur == 0)
-      dur = portMAX_DELAY;
-
-    if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, dur))
-    {
-      goto entry_point;
-    }
-
-    update_all_switches(CURR_PROFILE.pgcfg_b);
-    dur = CURR_PROFILE.duration_b_sec * 1000;
-    if (dur == 0)
-      dur = portMAX_DELAY;
-
-    if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, dur))
-    {
-      goto entry_point;
-    }
-  } */
 }
 
 // STM32F405 Flash memory is organized in sectors of varying sizes
@@ -501,8 +676,6 @@ static HAL_StatusTypeDef erase_sector_3(void)
   return status;
 }
 
-
-
 #define SIZE_OF_PROFILE_IN_WORD         12
 #define SIZE_OF_PROFILES                (sizeof(profile_t) * NUM_OF_PROFILES)
 #define SIZE_OF_PROFILES_IN_WORD        (SIZE_OF_PROFILES / 4)
@@ -514,19 +687,21 @@ static HAL_StatusTypeDef save_profiles(void)
   HAL_StatusTypeDef status;
 
   // Debug output
-  printf("Profile size: %u bytes (%u words)\r\n", sizeof(profile_t), SIZE_OF_PROFILE_IN_WORD);
+  printf("Profile size: %u bytes (%u words)\r\n", sizeof(profile_t),
+  SIZE_OF_PROFILE_IN_WORD);
   printf("Total profiles: %u\r\n", NUM_OF_PROFILES);
   printf("Start address: 0x%08lX\r\n", (FLASH_SECTOR_3_ADDR));
 
   // Calculate CRC
-  uint32_t crc = HAL_CRC_Calculate(&hcrc, (uint32_t*)profile, SIZE_OF_PROFILES_IN_WORD);
+  uint32_t crc = HAL_CRC_Calculate(&hcrc, (uint32_t*) profile,
+  SIZE_OF_PROFILES_IN_WORD);
 
   /* Unlock the Flash to enable the flash control register access */
   HAL_FLASH_Unlock();
 
   // Clear all error flags
-  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR |
-                      FLASH_FLAG_PGAERR | FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR);
+  __HAL_FLASH_CLEAR_FLAG(
+      FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR);
 
   status = erase_sector_3();
   if (status != HAL_OK)
@@ -539,7 +714,7 @@ static HAL_StatusTypeDef save_profiles(void)
   vTaskDelay(100);
 
   // Write profile
-  uint32_t *source_ptr = (uint32_t*)profile;
+  uint32_t *source_ptr = (uint32_t*) profile;
   uint32_t write_address;
 
   for (int i = 0; i < SIZE_OF_PROFILES_IN_WORD; i++)
@@ -548,18 +723,21 @@ static HAL_StatusTypeDef save_profiles(void)
 
 #if DEBUG_WRITING_EVERY_N_WORDS
     // Print debug info every 10 words
-    if (i % (DEBUG_WRITING_EVERY_N_WORDS) == 0) {
-      printf("Writing word %d (0x%08lX) to address 0x%08lX\r\n",
-             i, source_ptr[i], write_address);
+    if (i % (DEBUG_WRITING_EVERY_N_WORDS) == 0)
+    {
+      printf("Writing word %d (0x%08lX) to address 0x%08lX\r\n", i,
+          source_ptr[i], write_address);
     }
 #endif
 
-    status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, write_address, source_ptr[i]);
+    status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, write_address,
+        source_ptr[i]);
 
     if (status != HAL_OK)
     {
-      printf("error: failed to write word at index %d (addr: 0x%08lX, value: 0x%08lX)\r\n",
-             i, write_address, source_ptr[i]);
+      printf(
+          "error: failed to write word at index %d (addr: 0x%08lX, value: 0x%08lX)\r\n",
+          i, write_address, source_ptr[i]);
       printf("Flash SR: 0x%08lX\r\n", FLASH->SR);
       HAL_FLASH_Lock();
       return status;
@@ -585,7 +763,7 @@ static HAL_StatusTypeDef save_profiles(void)
 
   // Verify first few words were written correctly
   printf("Verification:\r\n");
-  uint32_t *verify_ptr = (uint32_t*)FLASH_SECTOR_3_ADDR;
+  uint32_t *verify_ptr = (uint32_t*) FLASH_SECTOR_3_ADDR;
   bool all_match = true;
   for (int i = 0; i < SIZE_OF_PROFILES_IN_WORD; i++)
   {
@@ -686,9 +864,10 @@ static HAL_StatusTypeDef load_profiles(void)
     }
   }
 
-  uint32_t stored_crc = *(__IO uint32_t*) (FLASH_SECTOR_3_ADDR + SIZE_OF_PROFILES);
+  uint32_t stored_crc = *(__IO uint32_t*) (FLASH_SECTOR_3_ADDR
+      + SIZE_OF_PROFILES);
   uint32_t calculated_crc = HAL_CRC_Calculate(&hcrc, (uint32_t*) _profile,
-      SIZE_OF_PROFILES_IN_WORD);
+  SIZE_OF_PROFILES_IN_WORD);
 
   if (stored_crc != calculated_crc)
   {
@@ -704,6 +883,4 @@ static HAL_StatusTypeDef load_profiles(void)
     return HAL_OK;
   }
 }
-
-
 

@@ -355,21 +355,31 @@ HAL_StatusTypeDef TCA9555_VerifiedWriteReg(uint8_t dev_idx, uint8_t reg, uint8_t
 /**
  *
  */
-void TCA9555_UpdateOutput(uint8_t port[6][2])
+void TCA9555_Break(void)
 {
-  printf("bb\r\n");
   for (int i = 0; i < 6; i++)
   {
     TCA9555_VerifiedWriteReg(i, TCA9555_REG_OUTPUT_PORT0, 0);
     TCA9555_VerifiedWriteReg(i, TCA9555_REG_OUTPUT_PORT1, 0);
   }
+}
 
-  vTaskDelay(5);
-  printf("aa\r\n");
-
+void TCA9555_Make(uint8_t port[6][2])
+{
   for (int i = 0; i < 6; i++)
   {
     TCA9555_VerifiedWriteReg(i, TCA9555_REG_OUTPUT_PORT0, port[i][0]);
     TCA9555_VerifiedWriteReg(i, TCA9555_REG_OUTPUT_PORT1, port[i][1]);
   }
 }
+
+//void TCA9555_UpdateOutput(uint8_t port[6][2])
+//{
+//  // printf("bb\r\n");
+//
+//
+//  vTaskDelay(5);
+//  // printf("aa\r\n");
+//
+//
+//}
