@@ -78,6 +78,10 @@ void DAC_Enable(void);
 #define SW3_GPIO_Port GPIOC
 #define SW4_Pin GPIO_PIN_3
 #define SW4_GPIO_Port GPIOC
+#define MUX1_CLR_Pin GPIO_PIN_0
+#define MUX1_CLR_GPIO_Port GPIOB
+#define MUX1_LE_N_Pin GPIO_PIN_1
+#define MUX1_LE_N_GPIO_Port GPIOB
 #define LEDC_Pin GPIO_PIN_11
 #define LEDC_GPIO_Port GPIOA
 #define SW5_Pin GPIO_PIN_12
