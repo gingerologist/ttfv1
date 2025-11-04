@@ -106,7 +106,7 @@ static bool parse_muxsw_index(const char *str, int *index) {
     }
     // 30..31
     if (str[0] == '3' && str[1] >= '0' && str[1] <= '1') {
-      *index = 30 + (str[2] - '0');
+      *index = 30 + (str[1] - '0');
       return true;
     }
   }
@@ -575,7 +575,7 @@ static void CLI_CMD_MUXSW(EmbeddedCli *cli, char *args, void *context) {
   int index;
   uint16_t count = embeddedCliGetTokenCount(args);
 
-  if (count != 2) {
+  if (count != 1) {
     printf("Example: muxsw <N> (N ranges 0..31)\r\n");
     return;
   }

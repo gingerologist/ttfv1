@@ -17,11 +17,11 @@
 #include "main.h"
 #include "hv2801.h"
 
-// #define USE_SPI
+#define USE_SPI
 
 #ifdef USE_SPI
 // External SPI handle (defined in your main or spi configuration file)
-extern SPI_HandleTypeDef hspi3;
+extern SPI_HandleTypeDef hspi1;
 #endif
 
 /**
@@ -71,10 +71,10 @@ HAL_StatusTypeDef HV2801_WriteConfig(uint32_t config) {
 #ifdef USE_SPI
 
   // Transmit all 32 bits (4 bytes)
-  status = HAL_SPI_Transmit(&hspi3, data, 4, HAL_MAX_DELAY);
+  status = HAL_SPI_Transmit(&hspi1, data, 4, HAL_MAX_DELAY);
 
   // Ensure SPI transmission is complete
-  while (HAL_SPI_GetState(&hspi3) != HAL_SPI_STATE_READY)
+  while (HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY)
     ;
 #endif
 
