@@ -56,8 +56,6 @@ CRC_HandleTypeDef hcrc;
 
 DAC_HandleTypeDef hdac;
 
-I2C_HandleTypeDef hi2c1;
-
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 
@@ -75,7 +73,6 @@ osMessageQId requestQueueHandle;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
-static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_CRC_Init(void);
@@ -93,22 +90,21 @@ void StartUxTask(void const * argument);
 /* USER CODE BEGIN 0 */
 
 /**
-* @brief  Overrides the standard _write function to redirect stdout and stderr to UART2
-* @param  file: File descriptor (1 for stdout, 2 for stderr)
-* @param  ptr: Pointer to the data buffer to be written
-* @param  len: Number of bytes to write
-* @retval The number of bytes written if successful, -1 otherwise
-*
-* @note   This function is called by printf and other stdio functions to output data.
-*         It redirects standard output (stdout) and standard error (stderr) to the
-*         configured UART2 peripheral, enabling printf functionality over serial.
-*/
-int _write(int file, char *ptr, int len)
-{
+ * @brief  Overrides the standard _write function to redirect stdout and stderr
+ * to UART2
+ * @param  file: File descriptor (1 for stdout, 2 for stderr)
+ * @param  ptr: Pointer to the data buffer to be written
+ * @param  len: Number of bytes to write
+ * @retval The number of bytes written if successful, -1 otherwise
+ *
+ * @note   This function is called by printf and other stdio functions to output
+ * data. It redirects standard output (stdout) and standard error (stderr) to
+ * the configured UART2 peripheral, enabling printf functionality over serial.
+ */
+int _write(int file, char *ptr, int len) {
   // Redirect stdout (file=1) and stderr (file=2) to UART2
-  if (file == 1 || file == 2)
-  {
-    HAL_UART_Transmit(&huart2, (uint8_t*) ptr, len, HAL_MAX_DELAY);
+  if (file == 1 || file == 2) {
+    HAL_UART_Transmit(&huart2, (uint8_t *)ptr, len, HAL_MAX_DELAY);
     return len;
   }
 
@@ -125,10 +121,10 @@ int _write(int file, char *ptr, int len)
 
 //  uint64_t test = DDS_FreqReg(200000);
 //  printf("\r\n\r\n---- test freq reg ----\r\n");
-//  printf("200KHz -> uint64_t, high 32bit is 0x%08x\r\n", (uint32_t)(test >> 32));
-//  printf("200KHz -> uint64_t,  low 32bit is 0x%08x\r\n", (uint32_t)test);
-uint32_t DDS_FreqReg(double f_out)
-{
+//  printf("200KHz -> uint64_t, high 32bit is 0x%08x\r\n", (uint32_t)(test >>
+//  32)); printf("200KHz -> uint64_t,  low 32bit is 0x%08x\r\n",
+//  (uint32_t)test);
+uint32_t DDS_FreqReg(double f_out) {
   uint32_t f32 = (uint32_t)round(f_out * 10.73741824);
   uint32_t lo = (f32 & 0x00003fff) | 0x00004000;
   uint32_t hi = (((f32 << 2) & 0xffff0000)) | 0x40000000;
@@ -137,23 +133,23 @@ uint32_t DDS_FreqReg(double f_out)
 }
 
 /**
-* @brief  Initializes and starts the AD9834 DDS (Direct Digital Synthesis) chip
-* @retval None
-*
-* https://www.analog.com/en/resources/app-notes/an-1070.html
-*
-* @note   This function configures and enables the AD9834 DDS chip from Analog Devices
-*         by sending the following sequence via SPI:
-*         1. Control word with B28=1 and RESET=1 (reset chip, enable 28-bit frequency writes)
-*         2. Frequency register low word (FREQLW)
-*         3. Frequency register high word (FREQHW)
-*         4. Phase register configuration
-*         5. Control word with B28=1 and RESET=0 (maintain config, enable output)
-*/
-void DDS_Start(uint32_t freq, bool dry_run)
-{
-  if (freq < 10000)
-  {
+ * @brief  Initializes and starts the AD9834 DDS (Direct Digital Synthesis) chip
+ * @retval None
+ *
+ * https://www.analog.com/en/resources/app-notes/an-1070.html
+ *
+ * @note   This function configures and enables the AD9834 DDS chip from Analog
+ * Devices by sending the following sequence via SPI:
+ *         1. Control word with B28=1 and RESET=1 (reset chip, enable 28-bit
+ * frequency writes)
+ *         2. Frequency register low word (FREQLW)
+ *         3. Frequency register high word (FREQHW)
+ *         4. Phase register configuration
+ *         5. Control word with B28=1 and RESET=0 (maintain config, enable
+ * output)
+ */
+void DDS_Start(uint32_t freq, bool dry_run) {
+  if (freq < 10000) {
     freq = 10000;
   }
 
@@ -161,49 +157,44 @@ void DDS_Start(uint32_t freq, bool dry_run)
   uint16_t freq_lo = (uint16_t)(freq_reg & 0x0000FFFF);
   uint16_t freq_hi = ((uint16_t)((freq_reg >> 16) & 0x0000FFFF));
 
-  uint16_t data[5] =
-  { 0x2100,   // Control word: B28=1, RESET=1
-    freq_lo,
-    // 0x449C,   // FREQLW for 200KHz
-    freq_hi,
-    // 0x4083,   // FREQHW for 200KHz
-    0xC000,   // Phase register
-    0x2000 }; // Control word: B28=1, RESET=0 (enable output)
+  uint16_t data[5] = {0x2100, // Control word: B28=1, RESET=1
+                      freq_lo,
+                      // 0x449C, // FREQLW for 200KHz
+                      freq_hi,
+                      // 0x4083,  // FREQHW for 200KHz
+                      0xC000,  // Phase register
+                      0x2000}; // Control word: B28=1, RESET=0 (enable output)
 
   printf("freq: %lu, lo: 0x%04x, hi: 0x%04x\r\n", freq, freq_lo, freq_hi);
 
-  for (int i = 0; i < 5; i++)
-  {
-    HAL_SPI_Transmit(&hspi2, (uint8_t*) &data[i], 1, HAL_MAX_DELAY);
+  for (int i = 0; i < 5; i++) {
+    HAL_SPI_Transmit(&hspi2, (uint8_t *)&data[i], 1, HAL_MAX_DELAY);
   }
 }
 
 /**
-* @brief  Starts the DAC channel 1 conversion
-* @retval None
-*
-* @note   This is a simple wrapper function that calls the HAL DAC start function
-*         for DAC channel 1 using the pre-configured DAC handle (hdac)
-*/
-void DAC_Start(void)
-{
-  HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
-}
+ * @brief  Starts the DAC channel 1 conversion
+ * @retval None
+ *
+ * @note   This is a simple wrapper function that calls the HAL DAC start
+ * function for DAC channel 1 using the pre-configured DAC handle (hdac)
+ */
+void DAC_Start(void) { HAL_DAC_Start(&hdac, DAC_CHANNEL_1); }
 
 /**
-* @brief  Updates the DAC output voltage to the specified value in millivolts
-* @param  mv: Desired output voltage in millivolts (mV)
-* @retval None
-*
-* @note   This function converts the requested voltage from millivolts to the
-*         corresponding 12-bit DAC value (0-4095) based on a 3.3V reference voltage,
-*         then updates DAC channel 1 with the calculated value
-*/
-//void DAC_Update(uint32_t mv)
+ * @brief  Updates the DAC output voltage to the specified value in millivolts
+ * @param  mv: Desired output voltage in millivolts (mV)
+ * @retval None
+ *
+ * @note   This function converts the requested voltage from millivolts to the
+ *         corresponding 12-bit DAC value (0-4095) based on a 3.3V reference
+ * voltage, then updates DAC channel 1 with the calculated value
+ */
+// void DAC_Update(uint32_t mv)
 //{
-//  uint32_t value = (mv * 4095) / 3300; /* Convert 700mV to DAC value */
-//  HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, value);
-//}
+//   uint32_t value = (mv * 4095) / 3300; /* Convert 700mV to DAC value */
+//   HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, value);
+// }
 
 /**
  * @brief  Sets DAC OUT1 based on percentage input
@@ -212,20 +203,19 @@ void DAC_Start(void)
  *         100% -> 0V output
  * @retval None
  */
-void DAC_SetOutput_Percent(uint32_t percentage)
-{
-//  static uint32_t last_percentage = 0;
-//
-//  // Validate input range
-//  if (percentage > 100)
-//  {
-//    percentage = 100;
-//  }
-//
-//  if (percentage == last_percentage)
-//  {
-//    return;
-//  }
+void DAC_SetOutput_Percent(uint32_t percentage) {
+  //  static uint32_t last_percentage = 0;
+  //
+  //  // Validate input range
+  //  if (percentage > 100)
+  //  {
+  //    percentage = 100;
+  //  }
+  //
+  //  if (percentage == last_percentage)
+  //  {
+  //    return;
+  //  }
 
   // Calculate DAC value
   // STM32F405 has 12-bit DAC (0-4095)
@@ -253,16 +243,15 @@ void DAC_SetOutput_Percent(uint32_t percentage)
   // DAC_Cmd(DAC_Channel_1, ENABLE);
 }
 
-void PA4_GPIO_High(void)
-{
+void PA4_GPIO_High(void) {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-
 
   // HAL_GPIO_DeInit(GPIOA, GPIO_PIN_4);
   HAL_DAC_Stop(&hdac, DAC_CHANNEL_1);
 
   // Method 2: Set output register BEFORE HAL_GPIO_Init (avoids glitch)
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);  // Pre-load output register
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4,
+                    GPIO_PIN_SET); // Pre-load output register
   GPIO_InitStruct.Pin = GPIO_PIN_4;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -270,8 +259,7 @@ void PA4_GPIO_High(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 }
 
-void PA4_Restore_DAC(void)
-{
+void PA4_Restore_DAC(void) {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   HAL_GPIO_DeInit(GPIOA, GPIO_PIN_4);
@@ -287,16 +275,14 @@ void PA4_Restore_DAC(void)
   // HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, your_dac_value);
 }
 
-void DAC_Disable(void)
-{
+void DAC_Disable(void) {
   // Stop: Clear the EN bit
-  hdac.Instance->CR &= ~DAC_CR_EN1;  // For channel 1
+  hdac.Instance->CR &= ~DAC_CR_EN1; // For channel 1
 }
 
-void DAC_Enable(void)
-{
+void DAC_Enable(void) {
   // Restart: Set the EN bit
-  hdac.Instance->CR |= DAC_CR_EN1;   // For channel 1
+  hdac.Instance->CR |= DAC_CR_EN1; // For channel 1
 }
 
 /* USER CODE END 0 */
@@ -331,7 +317,6 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_I2C1_Init();
   MX_SPI1_Init();
   MX_USART2_UART_Init();
   MX_CRC_Init();
@@ -383,8 +368,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+  while (1) {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -557,40 +541,6 @@ static void MX_DAC_Init(void)
 }
 
 /**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_I2C1_Init(void)
-{
-
-  /* USER CODE BEGIN I2C1_Init 0 */
-
-  /* USER CODE END I2C1_Init 0 */
-
-  /* USER CODE BEGIN I2C1_Init 1 */
-
-  /* USER CODE END I2C1_Init 1 */
-  hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 400000;
-  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
-  hi2c1.Init.OwnAddress1 = 0;
-  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c1.Init.OwnAddress2 = 0;
-  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN I2C1_Init 2 */
-
-  /* USER CODE END I2C1_Init 2 */
-
-}
-
-/**
   * @brief SPI1 Initialization Function
   * @param None
   * @retval None
@@ -647,11 +597,11 @@ static void MX_SPI2_Init(void)
   hspi2.Instance = SPI2;
   hspi2.Init.Mode = SPI_MODE_MASTER;
   hspi2.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi2.Init.DataSize = SPI_DATASIZE_16BIT;
   hspi2.Init.CLKPolarity = SPI_POLARITY_HIGH;
-  hspi2.Init.CLKPhase = SPI_PHASE_2EDGE;
+  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi2.Init.NSS = SPI_NSS_HARD_OUTPUT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -802,72 +752,72 @@ static void MX_GPIO_Init(void)
 __weak void StartProfileTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
-//  /* Infinite loop */
-//  // GPIO_PinState ps = GPIO_PIN_SET;
-//  // const uint8_t digipot = 192;
-//  // const uint8_t hello[] = "hello\r\n";
-//  // HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-//
-//  uart_printf(&huart2, "\r\n--- ttf boot ---\r\n");
-//  // AD9834_ConfigMCLK();
-//  // AD9834_Setup200kHzSineWave();
-//  // +AD9834_ConfigMCLK();
-//  TestAD9834();
-//
-//  print_tca9555();
-//  TCA9555_Init_All();
-//  print_tca9555();
-//
-//  // set P36 - P40 C (com), and P41-P45 S (signal)
-//  // chip 4 P0, chip 5 P0 and P1 involved
-//  // chip 4 P0 -> 00010101 (P36-38C)
-//  // chip 5 P1 -> 10100101 (P39-40C, P41-42S)
-//  // chip 5 P0 -> 10101000 (P43-45S, two lsbs irrelevent)
-//  // TCA9555_WriteReg(4, TCA9555_REG_OUTPUT_PORT0, 0b00010111);
-//
-//  TCA9555_WriteReg(4, TCA9555_REG_OUTPUT_PORT0, 0b00010101);
-//  TCA9555_WriteReg(5, TCA9555_REG_OUTPUT_PORT1, 0b10100101);
-//  TCA9555_WriteReg(5, TCA9555_REG_OUTPUT_PORT0, 0b10101000);
-//
-//
-//  for(int i = 0;;i++)
-//  {
-//
-//    // HAL_GPIO_WritePin();
-//    // HAL_GPIO_TogglePin(ledc_GPIO_Port, ledc_Pin);
-//
-//    // HAL_GPIO_WritePin(ledc_GPIO_Port, ledc_Pin, ps);
-//
-//    // HAL_UART_Transmit(&huart2, hello, 7, HAL_MAX_DELAY);
-//    // HAL_SPI_Transmit(&hspi1, &digipot, 1, HAL_MAX_DELAY);
-//
-//
-//    uart_printf(&huart2, "## %d\r\n", i);
-//
-////    for (int j = 0; j < 6; j++)
-////    {
-////      TCA9555_WriteReg(j, TCA9555_REG_OUTPUT_PORT0, 0x00);
-////      TCA9555_WriteReg(j, TCA9555_REG_OUTPUT_PORT1, 0x00);
-////    }
-//
-////    TCA9555_WriteReg(5, TCA9555_REG_OUTPUT_PORT0, 0x00);
-////    if (i % 2 == 0)
-////    {
-////      regval = 1 << 2;
-////    }
-////    else
-////    {
-////      regval = 1 << 3;
-////    }
-////
-////    TCA9555_WriteReg(5, TCA9555_REG_OUTPUT_PORT0, regval);
-//
-//
-//
-//
-//    // os neutral version of vTaskDelay(1000);
-//    osDelay(5000);
-//  }
+  //  /* Infinite loop */
+  //  // GPIO_PinState ps = GPIO_PIN_SET;
+  //  // const uint8_t digipot = 192;
+  //  // const uint8_t hello[] = "hello\r\n";
+  //  // HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  //
+  //  uart_printf(&huart2, "\r\n--- ttf boot ---\r\n");
+  //  // AD9834_ConfigMCLK();
+  //  // AD9834_Setup200kHzSineWave();
+  //  // +AD9834_ConfigMCLK();
+  //  TestAD9834();
+  //
+  //  print_tca9555();
+  //  TCA9555_Init_All();
+  //  print_tca9555();
+  //
+  //  // set P36 - P40 C (com), and P41-P45 S (signal)
+  //  // chip 4 P0, chip 5 P0 and P1 involved
+  //  // chip 4 P0 -> 00010101 (P36-38C)
+  //  // chip 5 P1 -> 10100101 (P39-40C, P41-42S)
+  //  // chip 5 P0 -> 10101000 (P43-45S, two lsbs irrelevent)
+  //  // TCA9555_WriteReg(4, TCA9555_REG_OUTPUT_PORT0, 0b00010111);
+  //
+  //  TCA9555_WriteReg(4, TCA9555_REG_OUTPUT_PORT0, 0b00010101);
+  //  TCA9555_WriteReg(5, TCA9555_REG_OUTPUT_PORT1, 0b10100101);
+  //  TCA9555_WriteReg(5, TCA9555_REG_OUTPUT_PORT0, 0b10101000);
+  //
+  //
+  //  for(int i = 0;;i++)
+  //  {
+  //
+  //    // HAL_GPIO_WritePin();
+  //    // HAL_GPIO_TogglePin(ledc_GPIO_Port, ledc_Pin);
+  //
+  //    // HAL_GPIO_WritePin(ledc_GPIO_Port, ledc_Pin, ps);
+  //
+  //    // HAL_UART_Transmit(&huart2, hello, 7, HAL_MAX_DELAY);
+  //    // HAL_SPI_Transmit(&hspi1, &digipot, 1, HAL_MAX_DELAY);
+  //
+  //
+  //    uart_printf(&huart2, "## %d\r\n", i);
+  //
+  ////    for (int j = 0; j < 6; j++)
+  ////    {
+  ////      TCA9555_WriteReg(j, TCA9555_REG_OUTPUT_PORT0, 0x00);
+  ////      TCA9555_WriteReg(j, TCA9555_REG_OUTPUT_PORT1, 0x00);
+  ////    }
+  //
+  ////    TCA9555_WriteReg(5, TCA9555_REG_OUTPUT_PORT0, 0x00);
+  ////    if (i % 2 == 0)
+  ////    {
+  ////      regval = 1 << 2;
+  ////    }
+  ////    else
+  ////    {
+  ////      regval = 1 << 3;
+  ////    }
+  ////
+  ////    TCA9555_WriteReg(5, TCA9555_REG_OUTPUT_PORT0, regval);
+  //
+  //
+  //
+  //
+  //    // os neutral version of vTaskDelay(1000);
+  //    osDelay(5000);
+  //  }
   /* USER CODE END 5 */
 }
 
@@ -882,8 +832,7 @@ __weak void StartUxTask(void const * argument)
 {
   /* USER CODE BEGIN StartUxTask */
   /* Infinite loop */
-  for (;;)
-  {
+  for (;;) {
     osDelay(1);
   }
   /* USER CODE END StartUxTask */
@@ -920,8 +869,7 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
-  while (1)
-  {
+  while (1) {
   }
   /* USER CODE END Error_Handler_Debug */
 }
@@ -936,8 +884,9 @@ void Error_Handler(void)
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+  /* User can add his own implementation to report the file name and line
+     number, ex: printf("Wrong parameters value: file %s on line %d\r\n", file,
+     line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
