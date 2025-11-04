@@ -18,8 +18,10 @@
 #include "command.h"
 #include "main.h"
 #include "profile.h"
-#include "tca9555.h"
+// #include "tca9555.h"
 #include "edge_detect.h"
+
+#include "hv2801.h"
 
 /**
  * SOMEDAY https://github.com/MaJerle/stm32-usart-uart-dma-rx-tx
@@ -79,6 +81,36 @@ static bool parse_profile_index(const char *str, int *index) {
     *index = 10 + (str[1] - '0'); // Convert "10"-"15" to 10-15
     return true;
   }
+  return false;
+}
+
+static bool parse_muxsw_index(const char *str, int *index) {
+  size_t len = strlen(str);
+
+  // 0..9
+  if (len == 1 && str[0] >= '0' && str[0] <= '9') {
+    *index = str[0] - '0'; // Convert '0'-'9' to 0-9
+    return true;
+  }
+
+  if (len == 2) {
+    // 10..19
+    if (str[0] == '1' && str[1] >= '0' && str[1] <= '9') {
+      *index = 10 + (str[1] - '0');
+      return true;
+    }
+    // 20..29
+    if (str[0] == '2' && str[1] >= '0' && str[1] <= '9') {
+      *index = 20 + (str[1] - '0');
+      return true;
+    }
+    // 30..31
+    if (str[0] == '3' && str[1] >= '0' && str[1] <= '1') {
+      *index = 30 + (str[2] - '0');
+      return true;
+    }
+  }
+
   return false;
 }
 
@@ -531,6 +563,35 @@ static void CLI_CMD_LED(EmbeddedCli *cli, char *args, void *context) {
 CliCommandBinding cli_cmd_led_binding = {
     "led", "blink led (for testing purposes).", false, NULL, CLI_CMD_LED};
 
+static void CLI_CMD_MUXCLR(EmbeddedCli *cli, char *args, void *context) {
+  HV2801_CLR();
+}
+
+CliCommandBinding cli_cmd_muxclr_binding = {
+    "muxclr", "toggle CLR (low high low)", false, NULL, CLI_CMD_MUXCLR};
+
+static void CLI_CMD_MUXSW(EmbeddedCli *cli, char *args, void *context) {
+  const char *p;
+  int index;
+  uint16_t count = embeddedCliGetTokenCount(args);
+
+  if (count != 2) {
+    printf("Example: muxsw <N> (N ranges 0..31)\r\n");
+    return;
+  }
+
+  p = embeddedCliGetToken(args, 1);
+  if (!parse_muxsw_index(p, &index)) {
+    printf("error: invalid muxsw index.\r\n");
+    return;
+  }
+
+  HV2801_SW(index);
+}
+
+CliCommandBinding cli_cmd_muxsw_binding = {
+    "muxsw", "switch on single mux switch", true, NULL, CLI_CMD_MUXSW};
+
 static void CLI_CMD_LL(EmbeddedCli *cli, char *args, void *context) {
   printf("DDBF profile:\r\n");
   print_profile(DDBF_PROFILE_INDEX);
@@ -703,7 +764,9 @@ void StartUxTask(void const *argument) {
   // embeddedCliAddBinding(cli, cli_cmd_led_binding);
 
   embeddedCliAddBinding(cli, cli_cmd_ll_binding);
-  embeddedCliAddBinding(cli, cli_cmd_tg_binding);
+  // embeddedCliAddBinding(cli, cli_cmd_tg_binding);
+  embeddedCliAddBinding(cli, cli_cmd_muxclr_binding);
+  embeddedCliAddBinding(cli, cli_cmd_muxsw_binding);
 
 #ifdef TCA9555
   embeddedCliAddBinding(cli, cli_cmd_port_binding);

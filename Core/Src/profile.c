@@ -374,9 +374,52 @@ void StartProfileTask(void const *argument) {
   printf("200KHz, lo reg 16bit is 0x%04x\r\n", (uint16_t)test);
 
   printf("\r\n\r\n---- ttf boot ---- \r\n");
-  printf("version: 1.0.1-20250428\r\n");
-  printf(
-      "  - use TCA9555_VerifiedWriteReg to detect i2c write failure.\r\n\r\n");
+  // Add this in your FreeRTOS task or after MX_SPI1_Init():
+
+  printf("\r\n=== SPI1 Debug Info ===\r\n");
+
+  // 1. Check if TRACE is stealing PB3
+  printf("DBGMCU->CR: 0x%08lX ", DBGMCU->CR);
+  if (DBGMCU->CR & (1 << 5)) {
+    printf(" <-- TRACE ENABLED! PB3 hijacked by SWO\r\n");
+  } else {
+    printf(" <-- Trace disabled, PB3 should be free\r\n");
+  }
+
+  // 2. Check GPIO configuration
+  printf("\r\nGPIOB Configuration:\r\n");
+  printf("  MODER:   0x%08lX (PB3 bits[7:6] should be 0b10=AF)\r\n",
+         GPIOB->MODER);
+  printf("  AFR[0]:  0x%08lX (PB3 bits[15:12] should be 0x5=AF5)\r\n",
+         GPIOB->AFR[0]);
+  printf("  OTYPER:  0x%08lX (PB3 bit[3] should be 0=PP)\r\n", GPIOB->OTYPER);
+  printf("  OSPEEDR: 0x%08lX (PB3 bits[7:6] should be 0b11=VeryHigh)\r\n",
+         GPIOB->OSPEEDR);
+
+  // Decode PB3 specifically
+  uint32_t pb3_mode = (GPIOB->MODER >> 6) & 0x3;
+  uint32_t pb3_af = (GPIOB->AFR[0] >> 12) & 0xF;
+  printf("  PB3 Mode: %lu (0=In, 1=Out, 2=AF, 3=Analog)\r\n", pb3_mode);
+  printf("  PB3 AF: %lu (should be 5 for SPI1)\r\n", pb3_af);
+
+  // 3. Check SPI1 registers
+  printf("\r\nSPI1 Registers:\r\n");
+  printf("  CR1: 0x%04X\r\n", SPI1->CR1);
+  printf("    SPE (bit 6): %d (should be 1)\r\n", (SPI1->CR1 >> 6) & 1);
+  printf("    MSTR (bit 2): %d (should be 1)\r\n", (SPI1->CR1 >> 2) & 1);
+  printf("    CPOL (bit 1): %d (should be 1)\r\n", (SPI1->CR1 >> 1) & 1);
+  printf("    CPHA (bit 0): %d (should be 1)\r\n", (SPI1->CR1 >> 0) & 1);
+  printf("  CR2: 0x%04X\r\n", SPI1->CR2);
+  printf("  SR: 0x%04X\r\n", SPI1->SR);
+
+  // 4. Check clocks
+  printf("\r\nClock Status:\r\n");
+  printf("  RCC->APB2ENR: 0x%08lX (SPI1 bit 12: %ld)\r\n", RCC->APB2ENR,
+         (RCC->APB2ENR >> 12) & 1);
+  printf("  RCC->AHB1ENR: 0x%08lX (GPIOB bit 1: %ld)\r\n", RCC->AHB1ENR,
+         (RCC->AHB1ENR >> 1) & 1);
+
+  printf("=== End Debug Info ===\r\n\r\n");
 
   // TCA9555_Init_All();
   // TCA9555_Dump();

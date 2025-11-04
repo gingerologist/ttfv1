@@ -1,3 +1,21 @@
+# Errors
+
+| 分类     | 错误说明      | 严重程度         |
+| -------- | ------------- | ---------------- |
+| 网络名称 | CLR和LE_N反了 | 修改软件配置可用 |
+
+
+
+
+
+
+
+# Key
+
+MCU的DAC输出通过6.8K电阻连接AD9834的FS_ADJUST引脚。在DAC输出在1.2V左右（1.12 min/1.18 avg/1.24 max）时输出幅度最小；
+
+
+
 # Interfaces
 
 ## MCU
@@ -21,3 +39,10 @@
 2. MUX GPIO default output high, SPI Mode 3 according to diagram, but not verified. 8 Bits. MSB First. 5.25Mbps as starting point.
 3. Via a T-shape network to translate +/- high voltage to 0-3.3V
 4. All SWs are pulled-up by GPIO configuration. No external pull-up on boards. LEDC output is active high and defaults to low.
+
+# Testing Signals
+
+## Stages
+
+- [x] MCO (25MHz)
+- [x] 缺省测量：DAC 1.24V，OUT和OUTB均无输出；符合AD9834行为。
