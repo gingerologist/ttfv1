@@ -200,5 +200,10 @@
 			<resource resourceType="PROJECT" workspacePath="/ttfv1"/>
 		</configuration>
 	</storageModule>
-	<storageModule moduleId="scannerConfiguration"/>
+	<storageModule moduleId="scannerConfiguration">
+		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1158662961;com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1158662961.;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.1375118725;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1517387181">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+	</storageModule>
 </cproject>
