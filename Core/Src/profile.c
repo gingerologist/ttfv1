@@ -415,6 +415,10 @@ void StartProfileTask(void const *argument) {
     printf("no profiles stored in flash\r\n");
   }
 
+  for (;;) {
+    vTaskDelay(1000);
+  }
+
   DAC_Start();
   DAC_SetOutput_Percent(0);
 
