@@ -41,8 +41,6 @@ const static phase_t zero_phase = {0};
 EmbeddedCliConfig *cli_config = NULL;
 EmbeddedCli *cli = NULL;
 
-extern UART_HandleTypeDef huart2;
-
 /* Private function prototypes -----------------------------------------------*/
 static void cli_writeChar(EmbeddedCli *embeddedCli, char c);
 static void CLI_CMD_List(EmbeddedCli *cli, char *args, void *context);
@@ -51,7 +49,7 @@ static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context);
 /* Private user code ---------------------------------------------------------*/
 static void cli_writeChar(EmbeddedCli *embeddedCli, char c) {
   uint8_t chr = c;
-  HAL_UART_Transmit(&huart2, &chr, 1, HAL_MAX_DELAY);
+  HAL_UART_Transmit(&CONSOLE_UART, &chr, 1, HAL_MAX_DELAY);
 }
 
 static void CLI_CMD_List(EmbeddedCli *cli, char *args, void *context) {
@@ -514,7 +512,7 @@ CliCommandBinding cli_cmd_define_binding = {
 static void CLI_CMD_Clear(EmbeddedCli *cli, char *args, void *context) {
   // printf("\033[2J\033[H"); This does not work
   // printf("\x1B[2J\x1B[H"); This does not work either
-  HAL_UART_Transmit(&huart2, (uint8_t *)"\x1B[2J\x1B[H", 7,
+  HAL_UART_Transmit(&CONSOLE_UART, (uint8_t *)"\x1B[2J\x1B[H", 7,
                     100); // this works :)
 }
 
@@ -591,6 +589,111 @@ static void CLI_CMD_MUXSW(EmbeddedCli *cli, char *args, void *context) {
 
 CliCommandBinding cli_cmd_muxsw_binding = {
     "muxsw", "switch on single mux switch", true, NULL, CLI_CMD_MUXSW};
+
+#if 0
+static bool parse_test_index(const char *str, int *index) {
+  size_t len = strlen(str);
+
+  // 0..9
+  if (len == 1 && str[0] >= '0' && str[0] <= '9') {
+    *index = str[0] - '0'; // Convert '0'-'9' to 0-9
+    return true;
+  }
+
+  if (len == 2) {
+    // 10..19
+    if (str[0] == '1' && str[1] >= '0' && str[1] <= '9') {
+      *index = 10 + (str[1] - '0');
+      return true;
+    }
+    // 20..29
+    if (str[0] == '2' && str[1] >= '0' && str[1] <= '9') {
+      *index = 20 + (str[1] - '0');
+      return true;
+    }
+    // 30..31
+    if (str[0] == '3' && str[1] >= '0' && str[1] <= '1') {
+      *index = 30 + (str[1] - '0');
+      return true;
+    }
+  }
+
+  return false;
+}
+#endif
+
+static void CLI_CMD_VPP(EmbeddedCli *cli, char *args, void *context) {
+
+  uint16_t count = embeddedCliGetTokenCount(args);
+
+  if (count == 0) {
+    do_test_profile(0, 0, 0, 0, 0);
+    return;
+  }
+
+  if (count == 2) {
+    int freq;
+    int level;
+
+    const char *p = embeddedCliGetToken(args, 1);
+    if (strcmp(p, "50000") == 0) {
+      freq = 50000;
+    } else if (strcmp(p, "100000") == 0) {
+      freq = 100000;
+    } else if (strcmp(p, "150000") == 0) {
+      freq = 150000;
+    } else if (strcmp(p, "200000") == 0) {
+      freq = 200000;
+    } else if (strcmp(p, "250000") == 0) {
+      freq = 250000;
+    } else if (strcmp(p, "300000") == 0) {
+      freq = 300000;
+    } else if (strcmp(p, "350000") == 0) {
+      freq = 350000;
+    } else if (strcmp(p, "400000") == 0) {
+      freq = 400000;
+    } else if (strcmp(p, "450000") == 0) {
+      freq = 450000;
+    } else if (strcmp(p, "500000") == 0) {
+      freq = 500000;
+    } else {
+      printf(
+          "freq can only be 50000, 100000, 150000, ..., 450000, 500000.\r\n");
+      return;
+    }
+
+    p = embeddedCliGetToken(args, 2);
+    if (strcmp(p, "10") == 0) {
+      level = 10;
+    } else if (strcmp(p, "20") == 0) {
+      level = 20;
+    } else if (strcmp(p, "30") == 0) {
+      level = 30;
+    } else if (strcmp(p, "40") == 0) {
+      level = 40;
+    } else if (strcmp(p, "50") == 0) {
+      level = 50;
+    } else if (strcmp(p, "60") == 0) {
+      level = 60;
+    } else if (strcmp(p, "70") == 0) {
+      level = 70;
+    } else if (strcmp(p, "80") == 0) {
+      level = 80;
+    } else if (strcmp(p, "90") == 0) {
+      level = 90;
+    } else if (strcmp(p, "100") == 0) {
+      level = 100;
+    } else {
+      printf("level can only be 10, 20, 30, ..., 90, 100.\r\n");
+      return;
+    }
+
+    do_test_profile(0, freq, level, 0, 0);
+  }
+}
+
+CliCommandBinding cli_cmd_test_binding = {"vpp", "run vpp test", true, NULL,
+                                          CLI_CMD_VPP};
 
 static void CLI_CMD_LL(EmbeddedCli *cli, char *args, void *context) {
   printf("DDBF profile:\r\n");
@@ -743,6 +846,7 @@ CliCommandBinding cli_cmd_port_binding = {
 #endif
 
 void StartUxTask(void const *argument) {
+
   static SW_HandleTypeDef sw5_handle = {
       .status = SW_RELEASED,
       .count = 0,
@@ -751,6 +855,7 @@ void StartUxTask(void const *argument) {
 
   /* USER CODE BEGIN 5 */
   cli_config = embeddedCliDefaultConfig();
+  cli_config->maxBindingCount = 16;
   cli = embeddedCliNew(cli_config);
   cli->writeChar = cli_writeChar;
 
@@ -767,6 +872,7 @@ void StartUxTask(void const *argument) {
   // embeddedCliAddBinding(cli, cli_cmd_tg_binding);
   embeddedCliAddBinding(cli, cli_cmd_muxclr_binding);
   embeddedCliAddBinding(cli, cli_cmd_muxsw_binding);
+  embeddedCliAddBinding(cli, cli_cmd_test_binding);
 
 #ifdef TCA9555
   embeddedCliAddBinding(cli, cli_cmd_port_binding);
@@ -781,7 +887,7 @@ void StartUxTask(void const *argument) {
   /* Infinite loop */
   for (;;) {
     uint8_t c;
-    HAL_StatusTypeDef status = HAL_UART_Receive(&huart2, &c, 1, 10);
+    HAL_StatusTypeDef status = HAL_UART_Receive(&CONSOLE_UART, &c, 1, 10);
     if (status == HAL_OK) {
       embeddedCliReceiveChar(cli, c);
       embeddedCliProcess(cli);

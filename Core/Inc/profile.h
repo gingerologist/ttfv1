@@ -11,6 +11,13 @@
 #include <stdint.h>
 #include <assert.h>
 
+/**
+ * 1. profilt_t的数据格式定义有历史原因，无重构必要性；
+ * 2. profile_t在通过消息队列传递时使用值而不是引用，即传递的是profile_t对象；
+ * 3. profile_t的profile a的frequency设置为0xFFFFFFFF判定为test
+ */
+#define A_FREQ_FOR_TEST (0xF0000000)
+
 #define NUM_OF_PROFILES 16
 #define STOP_PROFILE_INDEX (NUM_OF_PROFILES)         // 16
 #define DDBF_PROFILE_INDEX (STOP_PROFILE_INDEX + 1)  // 17
@@ -86,6 +93,7 @@ _Static_assert(sizeof(profile_t) == 48, "profile_t size not 40");
 void print_profile(int index);
 
 void do_profile(int index);
+void do_test_profile(int index, int arg1, int arg2, int arg3, int arg4);
 
 // profile_t get_profile(int index);
 

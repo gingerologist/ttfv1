@@ -30,9 +30,9 @@ extern SPI_HandleTypeDef hspi1;
  */
 void HV2801_Init(void) {
   // Set LE_N = HIGH (idle state, not latching)
-  HAL_GPIO_WritePin(MUX1_LE_N_GPIO_Port, MUX1_LE_N_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(MUX_LE_N_GPIO_Port, MUX_LE_N_Pin, GPIO_PIN_SET);
   // Set CLR = LOW permanently (normal operation mode)
-  HAL_GPIO_WritePin(MUX1_CLR_GPIO_Port, MUX1_CLR_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MUX_CLR_GPIO_Port, MUX_CLR_Pin, GPIO_PIN_RESET);
 }
 
 /**
@@ -60,7 +60,7 @@ HAL_StatusTypeDef HV2801_WriteConfig(uint32_t config) {
   data[3] = (config >> 0) & 0xFF;  // Bits 7-0   (SW3-SW0)
 
   // Start transaction: LE_N = LOW (enable data flow)
-  HAL_GPIO_WritePin(MUX1_LE_N_GPIO_Port, MUX1_LE_N_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MUX_LE_N_GPIO_Port, MUX_LE_N_Pin, GPIO_PIN_RESET);
 
   // Small delay for LE setup time (adjust if needed, typically ~10ns)
   // May not be needed at typical MCU speeds, but included for safety
@@ -84,7 +84,7 @@ HAL_StatusTypeDef HV2801_WriteConfig(uint32_t config) {
   __NOP();
 
   // End transaction: LE_N = HIGH (rising edge latches all 32 bits)
-  HAL_GPIO_WritePin(MUX1_LE_N_GPIO_Port, MUX1_LE_N_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(MUX_LE_N_GPIO_Port, MUX_LE_N_Pin, GPIO_PIN_SET);
 
   return status;
 }
@@ -120,15 +120,15 @@ uint32_t HV2801_SetSwitch(uint8_t switch_num, uint8_t state,
  */
 void HV2801_EmergencyOff(void) {
   // CLR = HIGH forces all switches OFF
-  HAL_GPIO_WritePin(MUX1_CLR_GPIO_Port, MUX1_CLR_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(MUX_CLR_GPIO_Port, MUX_CLR_Pin, GPIO_PIN_SET);
 }
 
 void HV2801_CLR(void) {
-  HAL_GPIO_WritePin(MUX1_CLR_GPIO_Port, MUX1_CLR_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MUX_CLR_GPIO_Port, MUX_CLR_Pin, GPIO_PIN_RESET);
   vTaskDelay(1);
-  HAL_GPIO_WritePin(MUX1_CLR_GPIO_Port, MUX1_CLR_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(MUX_CLR_GPIO_Port, MUX_CLR_Pin, GPIO_PIN_SET);
   vTaskDelay(1);
-  HAL_GPIO_WritePin(MUX1_CLR_GPIO_Port, MUX1_CLR_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MUX_CLR_GPIO_Port, MUX_CLR_Pin, GPIO_PIN_RESET);
   vTaskDelay(1);
 }
 
@@ -141,11 +141,11 @@ void HV2801_SW(int index) {
 
   uint32_t config = ((uint32_t)1) << index;
 
-  HAL_GPIO_WritePin(MUX1_CLR_GPIO_Port, MUX1_CLR_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MUX_CLR_GPIO_Port, MUX_CLR_Pin, GPIO_PIN_RESET);
   vTaskDelay(1);
-  HAL_GPIO_WritePin(MUX1_CLR_GPIO_Port, MUX1_CLR_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(MUX_CLR_GPIO_Port, MUX_CLR_Pin, GPIO_PIN_SET);
   vTaskDelay(1);
-  HAL_GPIO_WritePin(MUX1_CLR_GPIO_Port, MUX1_CLR_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MUX_CLR_GPIO_Port, MUX_CLR_Pin, GPIO_PIN_RESET);
   vTaskDelay(1);
 
   HAL_StatusTypeDef status = HV2801_WriteConfig(config);
@@ -159,7 +159,7 @@ void HV2801_SW(int index) {
  */
 void HV2801_Enable(void) {
   // CLR = LOW allows normal operation
-  HAL_GPIO_WritePin(MUX1_CLR_GPIO_Port, MUX1_CLR_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MUX_CLR_GPIO_Port, MUX_CLR_Pin, GPIO_PIN_RESET);
 }
 
 /* ===== EXAMPLE USAGE ===== */

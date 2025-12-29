@@ -1,21 +1,21 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.h
-  * @brief          : Header for main.c file.
-  *                   This file contains the common defines of the application.
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2024 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.h
+ * @brief          : Header for main.c file.
+ *                   This file contains the common defines of the application.
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2024 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
@@ -57,7 +57,7 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 uint32_t DDS_FreqReg(double f_out);
-void DDS_Start(uint32_t freq, bool dry_run);
+void DDS_Start(uint32_t freq, bool print);
 
 void DAC_Start(void);
 void DAC_SetOutput_Percent(uint32_t percentage);
@@ -70,31 +70,26 @@ void DAC_Enable(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define SW1_Pin GPIO_PIN_0
-#define SW1_GPIO_Port GPIOC
-#define SW2_Pin GPIO_PIN_1
-#define SW2_GPIO_Port GPIOC
-#define SW3_Pin GPIO_PIN_2
-#define SW3_GPIO_Port GPIOC
-#define SW4_Pin GPIO_PIN_3
+#define SW1_Pin GPIO_PIN_5
+#define SW1_GPIO_Port GPIOA
+#define SW2_Pin GPIO_PIN_6
+#define SW2_GPIO_Port GPIOA
+#define SW3_Pin GPIO_PIN_7
+#define SW3_GPIO_Port GPIOA
+#define SW4_Pin GPIO_PIN_4
 #define SW4_GPIO_Port GPIOC
-#define MUX1_LE_N_Pin GPIO_PIN_0
-#define MUX1_LE_N_GPIO_Port GPIOB
-#define MUX1_CLR_Pin GPIO_PIN_1
-#define MUX1_CLR_GPIO_Port GPIOB
-#define DDS_RESET_Pin GPIO_PIN_6
-#define DDS_RESET_GPIO_Port GPIOC
-#define DDS_FSEL_Pin GPIO_PIN_9
-#define DDS_FSEL_GPIO_Port GPIOA
-#define DDS_PSEL_Pin GPIO_PIN_10
-#define DDS_PSEL_GPIO_Port GPIOA
-#define LEDC_Pin GPIO_PIN_11
-#define LEDC_GPIO_Port GPIOA
-#define SW5_Pin GPIO_PIN_12
-#define SW5_GPIO_Port GPIOA
+#define SW5_Pin GPIO_PIN_5
+#define SW5_GPIO_Port GPIOC
+#define LEDC_Pin GPIO_PIN_0
+#define LEDC_GPIO_Port GPIOB
+#define MUX_LE_N_Pin GPIO_PIN_6
+#define MUX_LE_N_GPIO_Port GPIOB
+#define MUX_CLR_Pin GPIO_PIN_7
+#define MUX_CLR_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
-
+extern UART_HandleTypeDef huart1;
+#define CONSOLE_UART huart1
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
