@@ -82,10 +82,6 @@ void DAC_Enable(void);
 #define SW5_GPIO_Port GPIOC
 #define LEDC_Pin GPIO_PIN_0
 #define LEDC_GPIO_Port GPIOB
-#define MUX_LE_N_Pin GPIO_PIN_6
-#define MUX_LE_N_GPIO_Port GPIOB
-#define MUX_CLR_Pin GPIO_PIN_7
-#define MUX_CLR_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 extern UART_HandleTypeDef huart1;
