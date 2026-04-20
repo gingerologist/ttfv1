@@ -635,7 +635,7 @@ static void MX_USART6_UART_Init(void)
   huart6.Init.Mode = UART_MODE_TX_RX;
   huart6.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart6.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart6) != HAL_OK)
+  if (HAL_HalfDuplex_Init(&huart6) != HAL_OK)
   {
     Error_Handler();
   }
@@ -679,7 +679,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LEDC_GPIO_Port, LEDC_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LEDC_Pin|DDS_RESET_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : SW1_Pin SW2_Pin SW3_Pin */
   GPIO_InitStruct.Pin = SW1_Pin|SW2_Pin|SW3_Pin;
@@ -693,12 +693,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : LEDC_Pin */
-  GPIO_InitStruct.Pin = LEDC_Pin;
+  /*Configure GPIO pins : LEDC_Pin DDS_RESET_Pin */
+  GPIO_InitStruct.Pin = LEDC_Pin|DDS_RESET_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LEDC_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
   /* USER CODE END MX_GPIO_Init_2 */
