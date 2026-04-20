@@ -437,6 +437,11 @@ static bool parse_phase_freq(const char *p, uint32_t *freq) {
  *        33    duration in seconds
  *        100   voltage level
  */
+
+/**
+ * example:
+ *   define 1 a 1111,0000,2222,0000 33 100
+ */
 static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context) {
   const char *p;
   int profile_index;

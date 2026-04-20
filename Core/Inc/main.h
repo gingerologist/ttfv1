@@ -62,7 +62,7 @@ void DDS_Start(uint32_t freq, bool print);
 void DAC_Start(void);
 void DAC_SetOutput_Percent(uint32_t percentage);
 
-void PA4_GPIO_High(void);
+// void PA4_GPIO_High(void);
 void PA4_Restore_DAC(void);
 
 void DAC_Disable(void);

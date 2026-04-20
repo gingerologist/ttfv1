@@ -244,37 +244,39 @@ void DAC_SetOutput_Percent(uint32_t percentage) {
   // DAC_Cmd(DAC_Channel_1, ENABLE);
 }
 
-void PA4_GPIO_High(void) {
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
+// TODO what is this function for?
+// void PA4_GPIO_High(void) {
+//  GPIO_InitTypeDef GPIO_InitStruct = {0};
+//
+//  // HAL_GPIO_DeInit(GPIOA, GPIO_PIN_4);
+//  HAL_DAC_Stop(&hdac, DAC_CHANNEL_1);
+//
+//  // Method 2: Set output register BEFORE HAL_GPIO_Init (avoids glitch)
+//  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4,
+//                    GPIO_PIN_SET); // Pre-load output register
+//  GPIO_InitStruct.Pin = GPIO_PIN_4;
+//  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+//  GPIO_InitStruct.Pull = GPIO_NOPULL;
+//  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+//  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+//}
 
-  // HAL_GPIO_DeInit(GPIOA, GPIO_PIN_4);
-  HAL_DAC_Stop(&hdac, DAC_CHANNEL_1);
-
-  // Method 2: Set output register BEFORE HAL_GPIO_Init (avoids glitch)
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4,
-                    GPIO_PIN_SET); // Pre-load output register
-  GPIO_InitStruct.Pin = GPIO_PIN_4;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-}
-
-void PA4_Restore_DAC(void) {
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-  HAL_GPIO_DeInit(GPIOA, GPIO_PIN_4);
-
-  // Reconfigure PA4 back to analog mode for DAC
-  GPIO_InitStruct.Pin = GPIO_PIN_4;
-  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  // The DAC should now control the pin again
-  // Optionally write a new value to ensure proper output:
-  // HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, your_dac_value);
-}
+// TODO what is this function for?
+// void PA4_Restore_DAC(void) {
+//  GPIO_InitTypeDef GPIO_InitStruct = {0};
+//
+//  HAL_GPIO_DeInit(GPIOA, GPIO_PIN_4);
+//
+//  // Reconfigure PA4 back to analog mode for DAC
+//  GPIO_InitStruct.Pin = GPIO_PIN_4;
+//  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+//  GPIO_InitStruct.Pull = GPIO_NOPULL;
+//  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+//
+//  // The DAC should now control the pin again
+//  // Optionally write a new value to ensure proper output:
+//  // HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, your_dac_value);
+//}
 
 void DAC_Disable(void) {
   // Stop: Clear the EN bit

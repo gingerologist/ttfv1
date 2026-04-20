@@ -23,7 +23,7 @@
 
 extern osMessageQId requestQueueHandle;
 
-static profile_t profile[NUM_OF_ALL_PROFILES] = {
+static profile_v2_t profile[NUM_OF_ALL_PROFILES] = {
     {}, // 0
     {}, // 1
     {}, // 2
@@ -72,7 +72,8 @@ static char cfg2char(unsigned int cfg) {
   }
 }
 
-static void print_allpads_str(allpads_t *pads, char str[54]) {
+__attribute__((unused)) static void print_allpads_str(allpads_t *pads,
+                                                      char str[54]) {
   for (int i = 0; i < 3; i++) {
     str[i * 18 + 0] = cfg2char(pads->row[i].a_top);
     str[i * 18 + 1] = cfg2char(pads->row[i].a_lft);
@@ -95,6 +96,29 @@ static void print_allpads_str(allpads_t *pads, char str[54]) {
   }
 }
 
+static void print_allpads_str_v2(allpads_v2_t *pads, char str[20]) {
+  str[0] = cfg2char(pads->a1);
+  str[1] = cfg2char(pads->a2);
+  str[2] = cfg2char(pads->a3);
+  str[3] = cfg2char(pads->a4);
+  str[4] = ',';
+  str[5] = cfg2char(pads->b1);
+  str[6] = cfg2char(pads->b2);
+  str[7] = cfg2char(pads->b3);
+  str[8] = cfg2char(pads->b4);
+  str[9] = ',';
+  str[10] = cfg2char(pads->c1);
+  str[11] = cfg2char(pads->c2);
+  str[12] = cfg2char(pads->c3);
+  str[13] = cfg2char(pads->c4);
+  str[14] = ',';
+  str[15] = cfg2char(pads->d1);
+  str[16] = cfg2char(pads->d2);
+  str[17] = cfg2char(pads->d3);
+  str[18] = cfg2char(pads->d4);
+  str[19] = '\0'; // null termination
+}
+
 void print_profile(int i) {
   static char str[54];
 
@@ -102,17 +126,17 @@ void print_profile(int i) {
     return;
   }
 
-  print_allpads_str(&profile[i].a.pads, str);
+  print_allpads_str_v2(&profile[i].a.pads, str);
   printf("Profile #%02d phase a: %s in %d seconds at %d volts and %lu Hz\r\n",
          i, str, profile[i].a.duration, profile[i].a.level, profile[i].a.freq);
 
-  print_allpads_str(&profile[i].b.pads, str);
+  print_allpads_str_v2(&profile[i].b.pads, str);
   printf("            phase b: %s in %d seconds at %d volts and %lu Hz\r\n",
          str, profile[i].b.duration, profile[i].b.level, profile[i].b.freq);
 }
 
-profile_t get_profile(int index) {
-  profile_t prfl = {0};
+profile_v2_t get_profile(int index) {
+  profile_v2_t prfl = {0};
 
   if (index > -1 && index < 16) {
     return profile[index];
@@ -121,7 +145,7 @@ profile_t get_profile(int index) {
 }
 
 void set_profile_phase(int profile_index, int phase_index,
-                       const phase_t *phase) {
+                       const phase_v2_t *phase) {
   if (profile_index < 0 || profile_index > LAST_PROFILE_INDEX) {
     return;
   }
@@ -523,17 +547,21 @@ static HAL_StatusTypeDef erase_sector_3(void) {
   return status;
 }
 
-#define SIZE_OF_PROFILE_IN_WORD 12
-#define SIZE_OF_PROFILES (sizeof(profile_t) * NUM_OF_PROFILES)
+/**
+ * this value is 12 in previous version, in which sizeof(profile_t) is 48;
+ * now it is sizeof(profile_v2_t) / 4 = 32 / 4 = 8
+ */
+#define SIZE_OF_PROFILE_IN_WORD 8
+#define SIZE_OF_PROFILES (sizeof(profile_v2_t) * NUM_OF_PROFILES)
 #define SIZE_OF_PROFILES_IN_WORD (SIZE_OF_PROFILES / 4)
 
-#define DEBUG_WRITING_EVERY_N_WORDS 12
+#define DEBUG_WRITING_EVERY_N_WORDS 8
 
 static HAL_StatusTypeDef save_profiles(void) {
   HAL_StatusTypeDef status;
 
   // Debug output
-  printf("Profile size: %u bytes (%u words)\r\n", sizeof(profile_t),
+  printf("Profile size: %u bytes (%u words)\r\n", sizeof(profile_v2_t),
          SIZE_OF_PROFILE_IN_WORD);
   printf("Total profiles: %u\r\n", NUM_OF_PROFILES);
   printf("Start address: 0x%08lX\r\n", (FLASH_SECTOR_3_ADDR));
@@ -567,7 +595,7 @@ static HAL_StatusTypeDef save_profiles(void) {
     write_address = FLASH_SECTOR_3_ADDR + (i * sizeof(uint32_t));
 
 #if DEBUG_WRITING_EVERY_N_WORDS
-    // Print debug info every 10 words
+    // Print debug info every N words, just print the single word?
     if (i % (DEBUG_WRITING_EVERY_N_WORDS) == 0) {
       printf("Writing word %d (0x%08lX) to address 0x%08lX\r\n", i,
              source_ptr[i], write_address);
@@ -627,76 +655,14 @@ static HAL_StatusTypeDef save_profiles(void) {
   return status;
 }
 
-#if 0
-
-/*
- * write profile_t[16] to flash. sizeof(profile_t) == 40.
- */
-static HAL_StatusTypeDef save_profiles(void)
-{
-  HAL_StatusTypeDef status;
-
-  // calculate crc
-  uint32_t crc = HAL_CRC_Calculate(&hcrc, (uint32_t*) profile,
-      SIZE_OF_PROFILES_IN_WORD);
-
-  /* Unlock the Flash to enable the flash control register access */
-  HAL_FLASH_Unlock();
-
-  status = erase_sector_3();
-  if (status != HAL_OK)
-  {
-    printf("error: failed to erase sector 3\r\n");
-    HAL_FLASH_Lock();
-    return status;
-  }
-
-  vTaskDelay(500);
-
-  // write profile
-  for (int i = 0; i < NUM_OF_PROFILES; i++)
-  {
-    for (int j = 0; j < SIZE_OF_PROFILE_IN_WORD; j++)
-    {
-      status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD,
-          (FLASH_SECTOR_3_ADDR + i * SIZE_OF_PROFILE_IN_WORD + j * 4), profile[i].word[j]);
-
-      if (status != HAL_OK)
-      {
-        printf("error: failed to write profile[%d].word[%d]\r\n", i, j);
-        HAL_FLASH_Lock();
-        return status;
-      }
-
-      vTaskDelay(40);
-    }
-  }
-
-  // write crc
-  status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD,
-      (FLASH_SECTOR_3_ADDR + SIZE_OF_PROFILES), crc);
-
-  if (status != HAL_OK)
-  {
-    printf("error: failed to write CRC\r\n");
-    HAL_FLASH_Lock();
-    return status;
-  }
-
-  HAL_FLASH_Lock();
-  vTaskDelay(100);
-  return status;
-}
-
-#endif
-
 static HAL_StatusTypeDef load_profiles(void) {
-  static profile_t _profile[NUM_OF_PROFILES];
+  static profile_v2_t _profile[NUM_OF_PROFILES];
 
   for (int i = 0; i < NUM_OF_PROFILES; i++) {
     for (int j = 0; j < SIZE_OF_PROFILE_IN_WORD; j++) {
-      _profile[i].word[j] = *((__IO uint32_t *)(FLASH_SECTOR_3_ADDR +
-                                                i * sizeof(profile_t) + j * 4));
+      _profile[i].word[j] =
+          *((__IO uint32_t *)(FLASH_SECTOR_3_ADDR + i * sizeof(profile_v2_t) +
+                              j * 4));
     }
   }
 
