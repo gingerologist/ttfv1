@@ -15,7 +15,6 @@
 #include "stm32f4xx_hal.h"
 #include "main.h"
 #include "profile.h"
-#include "tca9555.h"
 
 #define STOP_PROFILE profile[STOP_PROFILE_INDEX]
 #define DDBF_PROFILE profile[DDBF_PROFILE_INDEX]
