@@ -416,8 +416,8 @@ void StartProfileTask(void const *argument) {
   }
 
   DAC_Start();
-  DAC_SetOutput_Percent(100);
-  DDS_Start(200000, true);
+  DAC_SetOutput_Percent(90);
+  DDS_Start(500000, true);
 
   for (;;) {
     vTaskDelay(1000);

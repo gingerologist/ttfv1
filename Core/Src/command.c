@@ -82,6 +82,8 @@ static bool parse_profile_index(const char *str, int *index) {
   return false;
 }
 
+#ifdef HV2801_ON_BOARD
+
 static bool parse_muxsw_index(const char *str, int *index) {
   size_t len = strlen(str);
 
@@ -111,6 +113,8 @@ static bool parse_muxsw_index(const char *str, int *index) {
 
   return false;
 }
+
+#endif
 
 /**
  * @brief  Parses a single character string to determine the phase index.
@@ -562,13 +566,16 @@ CliCommandBinding cli_cmd_led_binding = {
     "led", "blink led (for testing purposes).", false, NULL, CLI_CMD_LED};
 
 static void CLI_CMD_MUXCLR(EmbeddedCli *cli, char *args, void *context) {
+#ifdef HV2801_ON_BOARD
   HV2801_CLR();
+#endif
 }
 
 CliCommandBinding cli_cmd_muxclr_binding = {
     "muxclr", "toggle CLR (low high low)", false, NULL, CLI_CMD_MUXCLR};
 
 static void CLI_CMD_MUXSW(EmbeddedCli *cli, char *args, void *context) {
+#ifdef HV2801_ON_BOARD
   const char *p;
   int index;
   uint16_t count = embeddedCliGetTokenCount(args);
@@ -585,6 +592,7 @@ static void CLI_CMD_MUXSW(EmbeddedCli *cli, char *args, void *context) {
   }
 
   HV2801_SW(index);
+#endif
 }
 
 CliCommandBinding cli_cmd_muxsw_binding = {

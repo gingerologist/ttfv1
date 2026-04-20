@@ -11,6 +11,8 @@
  * Software NSS control via GPIO
  */
 
+#ifdef HV2801_ON_BOARD
+
 #include "stm32f4xx_hal.h"
 #include "cmsis_os.h"
 
@@ -192,3 +194,5 @@ void Example_Usage(void)
     HV2801_Enable();  // Re-enable
 }
 #endif
+
+#endif // HV2801_ON_BOARD
