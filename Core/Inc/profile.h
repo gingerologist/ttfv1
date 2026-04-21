@@ -11,6 +11,14 @@
 #include <stdint.h>
 #include <assert.h>
 
+// suppress the IDE syntax error (yellow mark) by
+// Project --> Properties --> C/C++ General --> Preprocessor Include Paths,
+// Macros etc. On the Entries tab, select CDT User Setting Entries, then click
+// Add
+//
+//   _Static_assert(a,b)
+//
+
 /**
  * 1. profilt_t的数据格式定义有历史原因，无重构必要性；
  * 2. profile_t在通过消息队列传递时使用值而不是引用，即传递的是profile_t对象；
@@ -25,14 +33,6 @@
 #define NEXT_PROFILE_INDEX (CURR_PROFILE_INDEX + 1)  // 19
 #define LAST_PROFILE_INDEX (NEXT_PROFILE_INDEX)      // 19
 #define NUM_OF_ALL_PROFILES (LAST_PROFILE_INDEX + 1) // 20
-
-// suppress the IDE syntax error (yellow mark) by
-// Project --> Properties --> C/C++ General --> Preprocessor Include Paths,
-// Macros etc. On the Entries tab, select CDT User Setting Entries, then click
-// Add
-//
-//   _Static_assert(a,b)
-//
 
 // each rowcfg_t packs 15 pads in total, into one word.
 typedef union {

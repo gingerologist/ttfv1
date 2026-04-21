@@ -302,20 +302,6 @@ static void padscfg_to_portcfg(allpads_t *pads, uint8_t port[6][2]) {
 extern const char *bit_rep[16];
 
 void do_profile(int index) {
-  //  if (index >= 0 && index < 16)
-  //  {
-  //    if (pdTRUE != xQueueSend(requestQueueHandle, &profile[index], 0))
-  //    {
-  //      printf("error: queue full\r\n");
-  //    }
-  //  }
-  //  else
-  //  {
-  //    if (pdTRUE != xQueueSend(requestQueueHandle, &STOP_PROFILE, 0))
-  //    {
-  //      printf("error: queue full\r\n");
-  //    }
-  //  }
   if (index < 0 || index > LAST_PROFILE_INDEX) {
     printf("error: do_profile, index %d out of range\r\n", index);
     return;
@@ -334,7 +320,7 @@ void do_test_profile(int index, int arg1, int arg2, int arg3, int arg4) {
   test_profile.a.duration = arg1;
   test_profile.a.level = arg2;
   test_profile.b.duration = arg3;
-  test_profile.b.duration = arg4;
+  test_profile.b.level = arg4;
 
   if (pdTRUE != xQueueSend(requestQueueHandle, &test_profile, 0)) {
     printf("error: queue full\r\n");
@@ -440,7 +426,7 @@ void StartProfileTask(void const *argument) {
 
   DAC_Start();
   DAC_SetOutput_Percent(90);
-  DDS_Start(500000, true);
+  DDS_Start(50000, true);
 
   for (;;) {
     vTaskDelay(1000);

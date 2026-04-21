@@ -36,7 +36,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 
-const static phase_t zero_phase = {0};
+const static phase_v2_t zero_phase = {0};
 
 EmbeddedCliConfig *cli_config = NULL;
 EmbeddedCli *cli = NULL;
@@ -162,11 +162,11 @@ static bool parse_phase_index(const char *str, int *phase) {
  * configuration fields in a row-based structure for different phases (a, b, c)
  * and positions (top, left, mid, right, bottom).
  */
-static bool parse_phase_padscfg(const char *str, allpads_t *padscfg) {
+__attribute__((unused)) static bool parse_phase_padscfg(const char *str,
+                                                        allpads_t *padscfg) {
   size_t len = strlen(str);
-  if (len != 53) {
+  if (len != 53)
     return false;
-  }
 
   padscfg->row[0].word = 0;
   padscfg->row[1].word = 0;
@@ -340,6 +340,79 @@ static bool parse_phase_padscfg(const char *str, allpads_t *padscfg) {
   return true;
 }
 
+__attribute__((unused)) static bool
+parse_phase_padscfg_v2(const char *str, allpads_v2_t *padscfg) {
+
+  size_t len = strlen(str);
+  if (len != 19)
+    return false;
+
+  for (int i = 0; i < 19; i++) {
+    if (i == 4 || i == 9 || i == 14) {
+      if (str[i] != ',')
+        return false;
+    } else if (str[i] != '0' && str[i] != '1' && str[i] != '2') {
+      return false;
+    }
+
+    unsigned int val = str[i] - '0';
+    switch (i) {
+    case 0:
+      padscfg->a1 = val;
+      break;
+    case 1:
+      padscfg->a2 = val;
+      break;
+    case 2:
+      padscfg->a3 = val;
+      break;
+    case 3:
+      padscfg->a4 = val;
+      break;
+    case 5:
+      padscfg->b1 = val;
+      break;
+    case 6:
+      padscfg->b2 = val;
+      break;
+    case 7:
+      padscfg->b3 = val;
+      break;
+    case 8:
+      padscfg->b4 = val;
+      break;
+    case 10:
+      padscfg->c1 = val;
+      break;
+    case 11:
+      padscfg->c2 = val;
+      break;
+    case 12:
+      padscfg->c3 = val;
+      break;
+    case 13:
+      padscfg->c4 = val;
+      break;
+    case 15:
+      padscfg->d1 = val;
+      break;
+    case 16:
+      padscfg->d2 = val;
+      break;
+    case 17:
+      padscfg->d3 = val;
+      break;
+    case 18:
+      padscfg->d4 = val;
+      break;
+    default:
+      break;
+    }
+  }
+
+  return true;
+}
+
 /**
  * @brief  Parses a string to extract a phase duration value.
  * @param  p: Pointer to the input string to be parsed
@@ -446,7 +519,7 @@ static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context) {
   const char *p;
   int profile_index;
   int phase_index;
-  phase_t phase;
+  phase_v2_t phase;
 
   uint16_t count = embeddedCliGetTokenCount(args);
 
@@ -468,7 +541,7 @@ static void CLI_CMD_Define(EmbeddedCli *cli, char *args, void *context) {
   }
 
   p = embeddedCliGetToken(args, 3);
-  if (!parse_phase_padscfg(p, &phase.pads)) {
+  if (!parse_phase_padscfg_v2(p, &phase.pads)) {
     printf("error: invalid pads config.\r\n");
     return;
   }
@@ -507,13 +580,10 @@ CliCommandBinding cli_cmd_define_binding = {
     "Define a profile. Example:\r\n"
     "        # define profile 0, phase a, with 30 seconds, 100% voltage, and "
     "5000 Hz\r\n\r\n"
-    "        > define 0 a "
-    "11111,11111,11111;22222,22222,22222;00000,00000,00000 30 100 5000\r\n\r\n"
+    "        > define 0 a 1111,0000,2222,0000 30 100 5000\r\n\r\n"
     "        # define profile 15, phase b, with 3600 seconds, 10% voltage, and "
     "500 KHz\r\n\r\n"
-    "        > define 15 b "
-    "11111,11111,11111;22222,22222,22222;00000,00000,00000 3600 10 "
-    "500000\r\n\r\n",
+    "        > define 15 b 1111,0000,2222,0000 3600 10 500000\r\n\r\n",
     true, NULL, CLI_CMD_Define};
 
 // static void CLI_CMD_Save(EmbeddedCli *cli, char *args, void *context) {}
@@ -721,34 +791,39 @@ CliCommandBinding cli_cmd_ll_binding = {
     "ll", "Print internal profiles (for testing purposes only)", false, NULL,
     CLI_CMD_LL};
 
+/**
+ * this function set only a group (4 pads)
+ * the first argument must be a, b, c, or d
+ */
 static void CLI_CMD_TGroup(EmbeddedCli *cli, char *args, void *context) {
-  static phase_t phase = {.level = 10};
+  static phase_v2_t phase = {.freq = 200000, .duration = 3600, .level = 10};
   const char *p;
-  char padstr[54] = "00000,00000,00000;00000,00000,00000;00000,00000,00000";
+  char padstr[20] = "0000,0000,0000,0000";
   int pos;
 
   uint16_t count = embeddedCliGetTokenCount(args);
 
   if (count != 2) {
-    printf("error: t1 command requires exact 2 arguments.\r\n");
+    printf("error: tg command requires exact 2 arguments.\r\n");
     return;
   }
 
   p = embeddedCliGetToken(args, 1);
-  if (strlen(p) != 1 || *p < '0' || *p > '8') {
-    printf("error: the first argument must be 0-8\r\n");
+  if (strlen(p) != 1 || *p < 'a' || *p > 'd') {
+    printf("error: the first argument must be a, b, c, or d\r\n");
     return;
   }
 
-  pos = *p - '0';
+  // pos means group a (0), b (1), c (2), or d (3)
+  pos = *p - 'a';
 
   p = embeddedCliGetToken(args, 2);
-  if (strlen(p) != 5) {
-    printf("error: the 2nd argument must contain exact 5 symbols.\r\n");
+  if (strlen(p) != 4) {
+    printf("error: the 2nd argument must contain exact 4 symbols.\r\n");
     return;
   }
 
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 4; i++) {
     if (p[i] != '0' && p[i] != '1' && p[i] != '2') {
       printf("error: all symbols in the 2nd argument must be 0, 1 or 2.\r\n");
       return;
@@ -759,7 +834,7 @@ static void CLI_CMD_TGroup(EmbeddedCli *cli, char *args, void *context) {
 
   printf("padstr: %s\r\n", padstr);
 
-  if (!parse_phase_padscfg(padstr, &phase.pads)) {
+  if (!parse_phase_padscfg_v2(padstr, &phase.pads)) {
     printf("error: unexpected error.\r\n");
     return;
   }
@@ -770,93 +845,9 @@ static void CLI_CMD_TGroup(EmbeddedCli *cli, char *args, void *context) {
   do_profile(DDBF_PROFILE_INDEX);
 }
 
-#if 0
-/*
- * t1 0 00000
- */
-static void CLI_CMD_T1(EmbeddedCli *cli, char *args, void *context)
-{
-  static phase_t phase;
-  rowpads_t *row;
-  const char *pos;
-  const char *cfg;
-
-  uint16_t count = embeddedCliGetTokenCount(args);
-
-  if (count != 2)
-  {
-    printf("error: t1 command requires exact 2 arguments.\r\n");
-    return;
-  }
-
-  pos = embeddedCliGetToken(args, 1);
-  if (strlen(pos) != 1 || *pos < '0' || *pos > '8')
-  {
-    printf("error: the first argument must be 0-8\r\n");
-  }
-
-  cfg = embeddedCliGetToken(args, 2);
-  if (strlen(cfg) != 5 || cfg[0] < '0' || cfg[0] > '2' || cfg[1] < '0'
-      || cfg[1] > '2' || cfg[2] < '0' || cfg[2] > '2' || cfg[3] < '0'
-      || cfg[3] > '2' || cfg[4] < '0' || cfg[4] > '2')
-  {
-    printf(
-        "error: the second argument must be nnnnn where n is 0, 1, or 2\r\n");
-  }
-
-  memset(&phase, 0, sizeof(phase));
-  set_profile_phase(DDBF_PROFILE_INDEX, 1, &phase);
-
-  phase.level = 20;
-
-  row = &phase.pads.row[(*pos - '0') / 3];
-
-  switch ((*pos - '0') % 3)
-  {
-    case 0:
-      row->a_top = cfg[0] - '0';
-      row->a_lft = cfg[1] - '0';
-      row->a_mid = cfg[2] - '0';
-      row->a_rgt = cfg[3] - '0';
-      row->a_bot = cfg[4] - '0';
-      break;
-    case 1:
-      row->b_top = cfg[0] - '0';
-      row->b_lft = cfg[1] - '0';
-      row->b_mid = cfg[2] - '0';
-      row->b_rgt = cfg[3] - '0';
-      row->b_bot = cfg[4] - '0';
-      break;
-    case 2:
-      row->c_top = cfg[0] - '0';
-      row->c_lft = cfg[1] - '0';
-      row->c_mid = cfg[2] - '0';
-      row->c_rgt = cfg[3] - '0';
-      row->c_bot = cfg[4] - '0';
-      break;
-    default:
-      break;
-  }
-
-  set_profile_phase(DDBF_PROFILE_INDEX, 0, &phase);
-
-  do_profile(DDBF_PROFILE_INDEX);
-}
-#endif
-
 CliCommandBinding cli_cmd_tg_binding = {
     "tg", "Direct config a single group of pads, for testing purposes only.",
     true, NULL, CLI_CMD_TGroup};
-
-#ifdef TCA9555
-static void CLI_CMD_Port(EmbeddedCli *cli, char *args, void *context) {
-  TCA9555_Dump();
-}
-
-CliCommandBinding cli_cmd_port_binding = {
-    "port", "Print output value of all tca9555 ports.", false, NULL,
-    CLI_CMD_Port};
-#endif
 
 void StartUxTask(void const *argument) {
 
@@ -886,10 +877,6 @@ void StartUxTask(void const *argument) {
   embeddedCliAddBinding(cli, cli_cmd_muxclr_binding);
   embeddedCliAddBinding(cli, cli_cmd_muxsw_binding);
   embeddedCliAddBinding(cli, cli_cmd_test_binding);
-
-#ifdef TCA9555
-  embeddedCliAddBinding(cli, cli_cmd_port_binding);
-#endif
 
   vTaskDelay(100);
 
