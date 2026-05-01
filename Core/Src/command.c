@@ -21,7 +21,10 @@
 // #include "tca9555.h"
 #include "edge_detect.h"
 
-#include "hv2801.h"
+// #include "hv2801.h"
+
+#define EMBEDDED_CLI_IMPL
+#include "embedded_cli.h"
 
 /**
  * SOMEDAY https://github.com/MaJerle/stm32-usart-uart-dma-rx-tx
