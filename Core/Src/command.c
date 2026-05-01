@@ -849,6 +849,58 @@ CliCommandBinding cli_cmd_tg_binding = {
     "tg", "Direct config a single group of pads, for testing purposes only.",
     true, NULL, CLI_CMD_TGroup};
 
+extern UART_HandleTypeDef huart6;
+
+static void CLI_CMD_FF(EmbeddedCli *cli, char *args, void *context) {
+  uint16_t count = embeddedCliGetTokenCount(args);
+  allpads_v2_t pads;
+
+  if (count != 1) {
+    printf("error: ff requires exactly 1 argument.\r\n");
+    return;
+  }
+
+  const char *p = embeddedCliGetToken(args, 1);
+  if (strlen(p) == 1) {
+    HAL_UART_Transmit(&huart6, (const uint8_t *)p, 1, 10);
+  } else if (strlen(p) == 19) {
+    if (parse_phase_padscfg_v2(p, &pads)) {
+      printf("sending %lu (%08lx)\r\n", pads.word, pads.word);
+      HAL_UART_Transmit(&huart6, pads.xbuf, 4, 10);
+    } else {
+      printf("error: failed to parse: %s\r\n", p);
+      return;
+    }
+  } else {
+    printf("error: len: %d\r\n", strlen(p));
+    return;
+  }
+
+  // drain
+  // UART_FLAG_TC - tx complete
+  // UART_FLAG_RXNE - rx not empty
+  while (!__HAL_UART_GET_FLAG(&huart6, UART_FLAG_TC))
+    ;
+  while (!__HAL_UART_GET_FLAG(&huart6, UART_FLAG_RXNE))
+    ;
+  (void)huart6.Instance->DR;
+
+  // clear all error flag
+  // ORE - overron error
+  // NE  - noise error
+  // FE  - frame error, incompatible frame format such as baudrate, stopbit etc.
+  // PE  - parity error
+  __HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_ORE | UART_FLAG_NE | UART_FLAG_FE |
+                                     UART_FLAG_PE);
+}
+
+CliCommandBinding cli_cmd_ff_binding = {
+    "ff",
+    "forward a pad conf to board b. eg:\r\n"
+    "          ff 0000,1111,0000,2222\r\n"
+    "          ff a # invalid case, send 'a'\r\n",
+    true, NULL, CLI_CMD_FF};
+
 void StartUxTask(void const *argument) {
 
   static SW_HandleTypeDef sw5_handle = {
@@ -877,6 +929,7 @@ void StartUxTask(void const *argument) {
   embeddedCliAddBinding(cli, cli_cmd_muxclr_binding);
   embeddedCliAddBinding(cli, cli_cmd_muxsw_binding);
   embeddedCliAddBinding(cli, cli_cmd_test_binding);
+  embeddedCliAddBinding(cli, cli_cmd_ff_binding);
 
   vTaskDelay(100);
 

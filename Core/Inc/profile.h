@@ -86,6 +86,7 @@ typedef union {
     unsigned int d3 : 2;
     unsigned int d4 : 2;
   };
+  uint8_t xbuf[4];
 } allpads_v2_t;
 
 _Static_assert(sizeof(allpads_v2_t) == 4, "allpads_v2_t size not 4");
