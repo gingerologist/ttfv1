@@ -72,30 +72,6 @@ static char cfg2char(unsigned int cfg) {
   }
 }
 
-__attribute__((unused)) static void print_allpads_str(allpads_t *pads,
-                                                      char str[54]) {
-  for (int i = 0; i < 3; i++) {
-    str[i * 18 + 0] = cfg2char(pads->row[i].a_top);
-    str[i * 18 + 1] = cfg2char(pads->row[i].a_lft);
-    str[i * 18 + 2] = cfg2char(pads->row[i].a_mid);
-    str[i * 18 + 3] = cfg2char(pads->row[i].a_rgt);
-    str[i * 18 + 4] = cfg2char(pads->row[i].a_bot);
-    str[i * 18 + 5] = ',';
-    str[i * 18 + 6] = cfg2char(pads->row[i].b_top);
-    str[i * 18 + 7] = cfg2char(pads->row[i].b_lft);
-    str[i * 18 + 8] = cfg2char(pads->row[i].b_mid);
-    str[i * 18 + 9] = cfg2char(pads->row[i].b_rgt);
-    str[i * 18 + 10] = cfg2char(pads->row[i].b_bot);
-    str[i * 18 + 11] = ',';
-    str[i * 18 + 12] = cfg2char(pads->row[i].c_top);
-    str[i * 18 + 13] = cfg2char(pads->row[i].c_lft);
-    str[i * 18 + 14] = cfg2char(pads->row[i].c_mid);
-    str[i * 18 + 15] = cfg2char(pads->row[i].c_rgt);
-    str[i * 18 + 16] = cfg2char(pads->row[i].c_bot);
-    str[i * 18 + 17] = i == 2 ? 0 : ';';
-  }
-}
-
 static void print_allpads_str_v2(allpads_v2_t *pads, char str[20]) {
   str[0] = cfg2char(pads->a1);
   str[1] = cfg2char(pads->a2);
@@ -176,21 +152,6 @@ void do_profile(int index) {
   }
 
   if (pdTRUE != xQueueSend(requestQueueHandle, &profile[index], 0)) {
-    printf("error: queue full\r\n");
-  }
-}
-
-void do_test_profile(int index, int arg1, int arg2, int arg3, int arg4) {
-  static profile_t test_profile;
-
-  memset(&test_profile, 0, sizeof(profile_t));
-  test_profile.a.freq = 0xFFFFFFFF - (unsigned int)index;
-  test_profile.a.duration = arg1;
-  test_profile.a.level = arg2;
-  test_profile.b.duration = arg3;
-  test_profile.b.level = arg4;
-
-  if (pdTRUE != xQueueSend(requestQueueHandle, &test_profile, 0)) {
     printf("error: queue full\r\n");
   }
 }

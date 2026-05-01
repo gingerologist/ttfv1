@@ -89,8 +89,8 @@
 					<fileInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1158662961.1540395516" name="hv2801.h" rcbsApplicability="disable" resourcePath="Core/Inc/hv2801.h" toolsToInvoke=""/>
 					<sourceEntries>
 						<entry excluding="Inc/command.h|Src/hv2801.c|Inc/hv2801.h|Inc/ad9834_3.h|Inc/tca9555.h|Inc/ad9834.h|Src/tca9555.c|Src/ad9834.c|Src/ad9834_3.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

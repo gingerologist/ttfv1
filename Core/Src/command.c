@@ -15,13 +15,11 @@
 #include "queue.h"
 
 #include "cmsis_os.h"
-// #include "command.h"
+
 #include "main.h"
 #include "profile.h"
-// #include "tca9555.h"
-#include "edge_detect.h"
 
-// #include "hv2801.h"
+#include "edge_detect.h"
 
 #define EMBEDDED_CLI_IMPL
 #include "embedded_cli.h"
@@ -61,6 +59,9 @@ static void CLI_CMD_List(EmbeddedCli *cli, char *args, void *context) {
   }
 }
 
+/**
+ *
+ */
 CliCommandBinding cli_cmd_list_binding = {"list", "Print profile 0 to 15",
                                           false, NULL, CLI_CMD_List};
 
@@ -84,40 +85,6 @@ static bool parse_profile_index(const char *str, int *index) {
   }
   return false;
 }
-
-#ifdef HV2801_ON_BOARD
-
-static bool parse_muxsw_index(const char *str, int *index) {
-  size_t len = strlen(str);
-
-  // 0..9
-  if (len == 1 && str[0] >= '0' && str[0] <= '9') {
-    *index = str[0] - '0'; // Convert '0'-'9' to 0-9
-    return true;
-  }
-
-  if (len == 2) {
-    // 10..19
-    if (str[0] == '1' && str[1] >= '0' && str[1] <= '9') {
-      *index = 10 + (str[1] - '0');
-      return true;
-    }
-    // 20..29
-    if (str[0] == '2' && str[1] >= '0' && str[1] <= '9') {
-      *index = 20 + (str[1] - '0');
-      return true;
-    }
-    // 30..31
-    if (str[0] == '3' && str[1] >= '0' && str[1] <= '1') {
-      *index = 30 + (str[1] - '0');
-      return true;
-    }
-  }
-
-  return false;
-}
-
-#endif
 
 /**
  * @brief  Parses a single character string to determine the phase index.
@@ -148,204 +115,12 @@ static bool parse_phase_index(const char *str, int *phase) {
 }
 
 /**
- * @brief  Parses a string containing pad configuration data and populates the
- * padscfg structure.
- * @param  str: Pointer to the input string containing pad configuration values
- *              Format must be exactly 53 characters long with specific format:
- *              - Values must be '0', '1', or '2'
- *              - Commas at positions divisible by 6 (except when divisible by
- * 18)
- *              - Semicolons at positions divisible by 18
- * @param  padscfg: Pointer to allpads_t structure to store the parsed
- * configuration values
- * @retval true if parsing was successful (valid format and values), false
- * otherwise
+ * convert string format (nnnn,nnnn,nnnn,nnnn)
+ * to binary format (union of uint32_t, bits, and char[])
  *
- * @note   The function maps specific string positions to corresponding pad
- * configuration fields in a row-based structure for different phases (a, b, c)
- * and positions (top, left, mid, right, bottom).
+ * return true if success
  */
-__attribute__((unused)) static bool parse_phase_padscfg(const char *str,
-                                                        allpads_t *padscfg) {
-  size_t len = strlen(str);
-  if (len != 53)
-    return false;
-
-  padscfg->row[0].word = 0;
-  padscfg->row[1].word = 0;
-  padscfg->row[2].word = 0;
-
-  for (int i = 0; i < 53; i++) {
-    if ((i + 1) % 6 == 0) {
-      if ((i + 1) % 18 == 0) {
-        if (str[i] != ';') {
-          return false;
-        }
-      } else {
-        if (str[i] != ',') {
-          return false;
-        }
-      }
-    } else if (str[i] != '0' && str[i] != '1' && str[i] != '2') {
-      return false;
-    }
-
-    switch (i) {
-    case 0:
-      padscfg->row[0].a_top = str[i] - '0';
-      break;
-    case 1:
-      padscfg->row[0].a_lft = str[i] - '0';
-      break;
-    case 2:
-      padscfg->row[0].a_mid = str[i] - '0';
-      break;
-    case 3:
-      padscfg->row[0].a_rgt = str[i] - '0';
-      break;
-    case 4:
-      padscfg->row[0].a_bot = str[i] - '0';
-      break;
-
-    case 6:
-      padscfg->row[0].b_top = str[i] - '0';
-      break;
-    case 7:
-      padscfg->row[0].b_lft = str[i] - '0';
-      break;
-    case 8:
-      padscfg->row[0].b_mid = str[i] - '0';
-      break;
-    case 9:
-      padscfg->row[0].b_rgt = str[i] - '0';
-      break;
-    case 10:
-      padscfg->row[0].b_bot = str[i] - '0';
-      break;
-
-    case 12:
-      padscfg->row[0].c_top = str[i] - '0';
-      break;
-    case 13:
-      padscfg->row[0].c_lft = str[i] - '0';
-      break;
-    case 14:
-      padscfg->row[0].c_mid = str[i] - '0';
-      break;
-    case 15:
-      padscfg->row[0].c_rgt = str[i] - '0';
-      break;
-    case 16:
-      padscfg->row[0].c_bot = str[i] - '0';
-      break;
-
-    case 18:
-      padscfg->row[1].a_top = str[i] - '0';
-      break;
-    case 19:
-      padscfg->row[1].a_lft = str[i] - '0';
-      break;
-    case 20:
-      padscfg->row[1].a_mid = str[i] - '0';
-      break;
-    case 21:
-      padscfg->row[1].a_rgt = str[i] - '0';
-      break;
-    case 22:
-      padscfg->row[1].a_bot = str[i] - '0';
-      break;
-
-    case 24:
-      padscfg->row[1].b_top = str[i] - '0';
-      break;
-    case 25:
-      padscfg->row[1].b_lft = str[i] - '0';
-      break;
-    case 26:
-      padscfg->row[1].b_mid = str[i] - '0';
-      break;
-    case 27:
-      padscfg->row[1].b_rgt = str[i] - '0';
-      break;
-    case 28:
-      padscfg->row[1].b_bot = str[i] - '0';
-      break;
-
-    case 30:
-      padscfg->row[1].c_top = str[i] - '0';
-      break;
-    case 31:
-      padscfg->row[1].c_lft = str[i] - '0';
-      break;
-    case 32:
-      padscfg->row[1].c_mid = str[i] - '0';
-      break;
-    case 33:
-      padscfg->row[1].c_rgt = str[i] - '0';
-      break;
-    case 34:
-      padscfg->row[1].c_bot = str[i] - '0';
-      break;
-
-    case 36:
-      padscfg->row[2].a_top = str[i] - '0';
-      break;
-    case 37:
-      padscfg->row[2].a_lft = str[i] - '0';
-      break;
-    case 38:
-      padscfg->row[2].a_mid = str[i] - '0';
-      break;
-    case 39:
-      padscfg->row[2].a_rgt = str[i] - '0';
-      break;
-    case 40:
-      padscfg->row[2].a_bot = str[i] - '0';
-      break;
-
-    case 42:
-      padscfg->row[2].b_top = str[i] - '0';
-      break;
-    case 43:
-      padscfg->row[2].b_lft = str[i] - '0';
-      break;
-    case 44:
-      padscfg->row[2].b_mid = str[i] - '0';
-      break;
-    case 45:
-      padscfg->row[2].b_rgt = str[i] - '0';
-      break;
-    case 46:
-      padscfg->row[2].b_bot = str[i] - '0';
-      break;
-
-    case 48:
-      padscfg->row[2].c_top = str[i] - '0';
-      break;
-    case 49:
-      padscfg->row[2].c_lft = str[i] - '0';
-      break;
-    case 50:
-      padscfg->row[2].c_mid = str[i] - '0';
-      break;
-    case 51:
-      padscfg->row[2].c_rgt = str[i] - '0';
-      break;
-    case 52:
-      padscfg->row[2].c_bot = str[i] - '0';
-      break;
-
-    default:
-      break;
-    }
-  }
-
-  return true;
-}
-
-__attribute__((unused)) static bool
-parse_phase_padscfg_v2(const char *str, allpads_v2_t *padscfg) {
-
+static bool parse_phase_padscfg_v2(const char *str, allpads_v2_t *padscfg) {
   size_t len = strlen(str);
   if (len != 19)
     return false;
@@ -643,144 +418,6 @@ static void CLI_CMD_LED(EmbeddedCli *cli, char *args, void *context) {
 CliCommandBinding cli_cmd_led_binding = {
     "led", "blink led (for testing purposes).", false, NULL, CLI_CMD_LED};
 
-static void CLI_CMD_MUXCLR(EmbeddedCli *cli, char *args, void *context) {
-#ifdef HV2801_ON_BOARD
-  HV2801_CLR();
-#endif
-}
-
-CliCommandBinding cli_cmd_muxclr_binding = {
-    "muxclr", "toggle CLR (low high low)", false, NULL, CLI_CMD_MUXCLR};
-
-static void CLI_CMD_MUXSW(EmbeddedCli *cli, char *args, void *context) {
-#ifdef HV2801_ON_BOARD
-  const char *p;
-  int index;
-  uint16_t count = embeddedCliGetTokenCount(args);
-
-  if (count != 1) {
-    printf("Example: muxsw <N> (N ranges 0..31)\r\n");
-    return;
-  }
-
-  p = embeddedCliGetToken(args, 1);
-  if (!parse_muxsw_index(p, &index)) {
-    printf("error: invalid muxsw index.\r\n");
-    return;
-  }
-
-  HV2801_SW(index);
-#endif
-}
-
-CliCommandBinding cli_cmd_muxsw_binding = {
-    "muxsw", "switch on single mux switch", true, NULL, CLI_CMD_MUXSW};
-
-#if 0
-static bool parse_test_index(const char *str, int *index) {
-  size_t len = strlen(str);
-
-  // 0..9
-  if (len == 1 && str[0] >= '0' && str[0] <= '9') {
-    *index = str[0] - '0'; // Convert '0'-'9' to 0-9
-    return true;
-  }
-
-  if (len == 2) {
-    // 10..19
-    if (str[0] == '1' && str[1] >= '0' && str[1] <= '9') {
-      *index = 10 + (str[1] - '0');
-      return true;
-    }
-    // 20..29
-    if (str[0] == '2' && str[1] >= '0' && str[1] <= '9') {
-      *index = 20 + (str[1] - '0');
-      return true;
-    }
-    // 30..31
-    if (str[0] == '3' && str[1] >= '0' && str[1] <= '1') {
-      *index = 30 + (str[1] - '0');
-      return true;
-    }
-  }
-
-  return false;
-}
-#endif
-
-static void CLI_CMD_VPP(EmbeddedCli *cli, char *args, void *context) {
-
-  uint16_t count = embeddedCliGetTokenCount(args);
-
-  if (count == 0) {
-    do_test_profile(0, 0, 0, 0, 0);
-    return;
-  }
-
-  if (count == 2) {
-    int freq;
-    int level;
-
-    const char *p = embeddedCliGetToken(args, 1);
-    if (strcmp(p, "50000") == 0) {
-      freq = 50000;
-    } else if (strcmp(p, "100000") == 0) {
-      freq = 100000;
-    } else if (strcmp(p, "150000") == 0) {
-      freq = 150000;
-    } else if (strcmp(p, "200000") == 0) {
-      freq = 200000;
-    } else if (strcmp(p, "250000") == 0) {
-      freq = 250000;
-    } else if (strcmp(p, "300000") == 0) {
-      freq = 300000;
-    } else if (strcmp(p, "350000") == 0) {
-      freq = 350000;
-    } else if (strcmp(p, "400000") == 0) {
-      freq = 400000;
-    } else if (strcmp(p, "450000") == 0) {
-      freq = 450000;
-    } else if (strcmp(p, "500000") == 0) {
-      freq = 500000;
-    } else {
-      printf(
-          "freq can only be 50000, 100000, 150000, ..., 450000, 500000.\r\n");
-      return;
-    }
-
-    p = embeddedCliGetToken(args, 2);
-    if (strcmp(p, "10") == 0) {
-      level = 10;
-    } else if (strcmp(p, "20") == 0) {
-      level = 20;
-    } else if (strcmp(p, "30") == 0) {
-      level = 30;
-    } else if (strcmp(p, "40") == 0) {
-      level = 40;
-    } else if (strcmp(p, "50") == 0) {
-      level = 50;
-    } else if (strcmp(p, "60") == 0) {
-      level = 60;
-    } else if (strcmp(p, "70") == 0) {
-      level = 70;
-    } else if (strcmp(p, "80") == 0) {
-      level = 80;
-    } else if (strcmp(p, "90") == 0) {
-      level = 90;
-    } else if (strcmp(p, "100") == 0) {
-      level = 100;
-    } else {
-      printf("level can only be 10, 20, 30, ..., 90, 100.\r\n");
-      return;
-    }
-
-    do_test_profile(0, freq, level, 0, 0);
-  }
-}
-
-CliCommandBinding cli_cmd_test_binding = {"vpp", "run vpp test", true, NULL,
-                                          CLI_CMD_VPP};
-
 static void CLI_CMD_LL(EmbeddedCli *cli, char *args, void *context) {
   printf("DDBF profile:\r\n");
   print_profile(DDBF_PROFILE_INDEX);
@@ -924,14 +561,7 @@ void StartUxTask(void const *argument) {
   embeddedCliAddBinding(cli, cli_cmd_clear_binding);
   embeddedCliAddBinding(cli, cli_cmd_reboot_binding);
   embeddedCliAddBinding(cli, cli_cmd_dip_binding);
-
-  // embeddedCliAddBinding(cli, cli_cmd_led_binding);
-
   embeddedCliAddBinding(cli, cli_cmd_ll_binding);
-  // embeddedCliAddBinding(cli, cli_cmd_tg_binding);
-  embeddedCliAddBinding(cli, cli_cmd_muxclr_binding);
-  embeddedCliAddBinding(cli, cli_cmd_muxsw_binding);
-  embeddedCliAddBinding(cli, cli_cmd_test_binding);
   embeddedCliAddBinding(cli, cli_cmd_ff_binding);
 
   vTaskDelay(100);
