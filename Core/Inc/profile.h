@@ -24,7 +24,7 @@
  * 2. profile_t在通过消息队列传递时使用值而不是引用，即传递的是profile_t对象；
  * 3. profile_t的profile a的frequency设置为0xFFFFFFFF判定为test
  */
-#define A_FREQ_FOR_TEST (0xF0000000)
+// #define A_FREQ_FOR_TEST (0xF0000000)
 
 #define NUM_OF_PROFILES 16
 #define STOP_PROFILE_INDEX (NUM_OF_PROFILES)         // 16

@@ -37,8 +37,6 @@
 
 /* Private variables ---------------------------------------------------------*/
 
-const static phase_v2_t zero_phase = {0};
-
 EmbeddedCliConfig *cli_config = NULL;
 EmbeddedCli *cli = NULL;
 
@@ -443,12 +441,12 @@ static void CLI_CMD_FF(EmbeddedCli *cli, char *args, void *context) {
   }
 
   const char *p = embeddedCliGetToken(args, 1);
-  if (strlen(p) == 1) {
-    HAL_UART_Transmit(&huart6, (const uint8_t *)p, 1, 10);
+  if (strlen(p) == 1 && p[0] == '0') {
+    UART_Send(0);
   } else if (strlen(p) == 19) {
     if (parse_phase_padscfg_v2(p, &pads)) {
-      printf("sending %lu (%08lx)\r\n", pads.word, pads.word);
-      HAL_UART_Transmit(&huart6, pads.xbuf, 4, 10);
+
+      UART_Send(pads.word);
     } else {
       printf("error: failed to parse: %s\r\n", p);
       return;
@@ -458,29 +456,31 @@ static void CLI_CMD_FF(EmbeddedCli *cli, char *args, void *context) {
     return;
   }
 
-  // drain
-  // UART_FLAG_TC - tx complete
-  // UART_FLAG_RXNE - rx not empty
-  while (!__HAL_UART_GET_FLAG(&huart6, UART_FLAG_TC))
-    ;
-  while (!__HAL_UART_GET_FLAG(&huart6, UART_FLAG_RXNE))
-    ;
-  (void)huart6.Instance->DR;
-
-  // clear all error flag
-  // ORE - overron error
-  // NE  - noise error
-  // FE  - frame error, incompatible frame format such as baudrate, stopbit etc.
-  // PE  - parity error
-  __HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_ORE | UART_FLAG_NE | UART_FLAG_FE |
-                                     UART_FLAG_PE);
+  //  // drain
+  //  // UART_FLAG_TC - tx complete
+  //  // UART_FLAG_RXNE - rx not empty
+  //  while (!__HAL_UART_GET_FLAG(&huart6, UART_FLAG_TC))
+  //    ;
+  //  while (!__HAL_UART_GET_FLAG(&huart6, UART_FLAG_RXNE))
+  //    ;
+  //  (void)huart6.Instance->DR;
+  //
+  //  // clear all error flag
+  //  // ORE - overron error
+  //  // NE  - noise error
+  //  // FE  - frame error, incompatible frame format such as baudrate, stopbit
+  //  etc.
+  //  // PE  - parity error
+  //  __HAL_UART_CLEAR_FLAG(&huart6, UART_FLAG_ORE | UART_FLAG_NE | UART_FLAG_FE
+  //  |
+  //                                     UART_FLAG_PE);
 }
 
 CliCommandBinding cli_cmd_ff_binding = {
     "ff",
     "forward a pad conf to board b. eg:\r\n"
     "          ff 0000,1111,0000,2222\r\n"
-    "          ff a # invalid case, send 'a'\r\n",
+    "          ff 0       # equivalent to 0000,0000,0000,0000\r\n",
     true, NULL, CLI_CMD_FF};
 
 void StartUxTask(void const *argument) {

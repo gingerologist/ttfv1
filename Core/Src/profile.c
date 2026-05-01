@@ -52,14 +52,6 @@ extern ADC_HandleTypeDef hadc1;
 static HAL_StatusTypeDef save_profiles(void);
 static HAL_StatusTypeDef load_profiles(void);
 
-static uint16_t adc_dma_buf[960];
-
-/* Private function prototypes -----------------------------------------------*/
-
-/* Private user code ---------------------------------------------------------*/
-
-/* Public user code ---------------------------------------------------------*/
-
 static char cfg2char(unsigned int cfg) {
   if (cfg == 0) {
     return '0';
@@ -137,14 +129,6 @@ void set_profile_phase(int profile_index, int phase_index,
   }
 }
 
-typedef struct {
-  uint8_t addr;    // 0-6
-  uint8_t port;    // 0 or 1
-  uint8_t mask[3]; // see netmap initializer
-} netmap_t;
-
-extern const char *bit_rep[16];
-
 void do_profile(int index) {
   if (index < 0 || index > LAST_PROFILE_INDEX) {
     printf("error: index %d out of range\r\n", index);
@@ -154,83 +138,6 @@ void do_profile(int index) {
   if (pdTRUE != xQueueSend(requestQueueHandle, &profile[index], 0)) {
     printf("error: queue full\r\n");
   }
-}
-
-static bool curr_is_test_profile(void) {
-  return CURR_PROFILE.a.freq >= A_FREQ_FOR_TEST;
-}
-
-/*
- * Freq
- * 50,000     10      48      480
- * 100,000    10      24      240
- * 200,000    10      12      120
- * 500,000    10      4.8     48
- */
-
-/**
- * @brief Calculate required ADC sample count for whole cycles
- * @param frequency Signal frequency in Hz (50,000 to 500,000)
- * @param num_cycles Number of complete cycles to sample
- * @retval Required sample count
- */
-uint32_t Calculate_ADC_Sample_Count(uint32_t frequency, uint32_t num_cycles) {
-  const uint32_t SAMPLING_RATE = 2400000; // 2.4 MHz
-
-  // Calculate samples for exact number of cycles
-  // samples = (sampling_rate * num_cycles) / frequency
-  uint32_t total_samples = (SAMPLING_RATE * num_cycles) / frequency;
-
-  return total_samples;
-}
-
-static int measure_hv_vpp(uint32_t freq, uint32_t level, TickType_t stab_delay,
-                          bool print) {
-
-  uint32_t sample_count = Calculate_ADC_Sample_Count(freq, 20);
-
-  DAC_SetOutput_Percent(0);
-  vTaskDelay(100);
-
-  DDS_Start(freq, false);
-  DAC_SetOutput_Percent(level);
-
-  // stabilize
-  vTaskDelay(stab_delay);
-
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_dma_buf, sample_count);
-  while (HAL_DMA_GetState(hadc1.DMA_Handle) != HAL_DMA_STATE_READY)
-    ;
-  HAL_ADC_Stop_DMA(&hadc1);
-
-  int adc_sum = 0;
-  for (int i = 0; i < sample_count; i++) {
-    adc_sum += adc_dma_buf[i];
-  }
-
-  float adc_avg = ((float)adc_sum) / sample_count;
-
-  float sum_of_squares = 0;
-  for (int i = 0; i < sample_count; i++) {
-    float amp = (float)adc_dma_buf[i] - adc_avg;
-    sum_of_squares += amp * amp;
-  }
-
-  float rms_adc = sqrtf(sum_of_squares / sample_count);
-  float Vmid = (adc_avg / 4095.0) * 3.3;
-  float Vrms = (rms_adc / 4095.0) * 3.3;
-  float Vpp = Vrms * 2.0 * sqrtf(2.0);
-
-  int hv_vpp = (int)(Vpp * 40 * 1000);
-
-  if (print) {
-    printf("measure_hv_vpp: freq: %lu, sample_count: %lu, Vmid: %d mV, Vrms: "
-           "%d mV, Vpp: %d mV, hv_vpp: %d mV\r\n",
-           freq, sample_count, (int)(Vmid * 1000), (int)(Vrms * 1000),
-           (int)(Vpp * 1000), hv_vpp);
-  }
-
-  return hv_vpp;
 }
 
 void StartProfileTask(void const *argument) {
@@ -243,9 +150,6 @@ void StartProfileTask(void const *argument) {
   printf("200KHz, hi reg 16bit is 0x%04x\r\n", (uint16_t)(test >> 16));
   printf("200KHz, lo reg 16bit is 0x%04x\r\n", (uint16_t)test);
 
-  printf("\r\n\r\n---- ttf boot ---- \r\n");
-  // Add this in your FreeRTOS task or after MX_SPI1_Init():
-
   status = load_profiles();
   if (status == HAL_OK) {
     printf("profiles loaded from flash\r\n");
@@ -253,82 +157,49 @@ void StartProfileTask(void const *argument) {
     printf("no profiles stored in flash\r\n");
   }
 
+#ifdef FIX_TESTING
   DAC_Start();
-  DAC_SetOutput_Percent(90);
-  DDS_Start(50000, true);
-
-  for (;;) {
-    vTaskDelay(1000);
-  }
+  DAC_SetOutput_Percent(95);
+  DDS_Start(200000, true);
+  vTaskDelay(portMAX_DELAY);
+#else
+  DAC_Start();
+  DAC_SetOutput_Percent(0);
+  vTaskDelay(portMAX_DELAY);
+#endif
 
 entry_point:
 
   CURR_PROFILE = NEXT_PROFILE;
+  DDS_Start(CURR_PROFILE.a.freq, false);
 
-  if (!curr_is_test_profile()) {
+  for (;;) {
+    DAC_SetOutput_Percent(CURR_PROFILE.a.level);
 
-    DDS_Start(CURR_PROFILE.a.freq, false);
+    if (CURR_PROFILE.a.duration == 0)
+      dur = portMAX_DELAY;
+    else
+      dur = CURR_PROFILE.a.duration * 1000 - 1;
 
-    for (;;) {
-
-      // optotriac_update(&CURR_PROFILE.a);
-      DAC_SetOutput_Percent(CURR_PROFILE.a.level);
-
-      dur = CURR_PROFILE.a.duration * 1000;
-      if (dur == 0)
-        dur = portMAX_DELAY;
-
-      if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, dur)) {
-        printf("goto from a\r\n");
-        goto entry_point;
-      }
-
-      // optotriac_update(&CURR_PROFILE.b);
-      DAC_SetOutput_Percent(CURR_PROFILE.b.level);
-
-      dur = CURR_PROFILE.b.duration * 1000;
-      if (dur == 0)
-        dur = portMAX_DELAY;
-
-      if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, dur)) {
-        printf("goto from b\r\n");
-        goto entry_point;
-      }
-    }
-  }
-
-  if (CURR_PROFILE.a.freq == 0xFFFFFFFF) {
-
-    int freqArg = CURR_PROFILE.a.duration;
-    int levelArg = CURR_PROFILE.a.level;
-
-    if (freqArg == 0 && levelArg == 0) {
-      for (int freq = 50000, i = 0; freq <= 500000; freq += 50000, i++) {
-        for (int level = 10, j = 0; level <= 100; level += 10, j++) {
-          printf("freq: %d, level: %d, Vpp: %d\r\n", freq, level,
-                 measure_hv_vpp(freq, level, 100, false));
-          vTaskDelay(500);
-        }
-      }
-
-      NEXT_PROFILE = STOP_PROFILE;
+    UART_Send(CURR_PROFILE.a.pads.word);
+    if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, dur)) {
+      printf("goto from a\r\n");
       goto entry_point;
     }
 
-    if (freqArg >= 50000 && freqArg <= 500000 && levelArg >= 10 &&
-        levelArg <= 100) {
-      printf("freq: %d, level: %d, Vpp: %d -- hold\r\n", freqArg, levelArg,
-             measure_hv_vpp(freqArg, levelArg, 100, false));
+    DAC_SetOutput_Percent(CURR_PROFILE.b.level);
 
-      if (pdTRUE ==
-          xQueueReceive(requestQueueHandle, &NEXT_PROFILE, portMAX_DELAY)) {
-        goto entry_point;
-      }
+    if (CURR_PROFILE.b.duration == 0)
+      dur = portMAX_DELAY;
+    else
+      dur = CURR_PROFILE.b.duration * 1000 - 1;
+
+    UART_Send(CURR_PROFILE.b.pads.word);
+    if (pdTRUE == xQueueReceive(requestQueueHandle, &NEXT_PROFILE, dur)) {
+      printf("goto from b\r\n");
+      goto entry_point;
     }
   }
-
-  NEXT_PROFILE = STOP_PROFILE;
-  goto entry_point;
 }
 
 // STM32F405 Flash memory is organized in sectors of varying sizes
@@ -496,3 +367,72 @@ static HAL_StatusTypeDef load_profiles(void) {
     return HAL_OK;
   }
 }
+
+#if 0
+static uint16_t adc_dma_buf[960];
+
+/**
+ * @brief Calculate required ADC sample count for whole cycles
+ * @param frequency Signal frequency in Hz (50,000 to 500,000)
+ * @param num_cycles Number of complete cycles to sample
+ * @retval Required sample count
+ */
+uint32_t Calculate_ADC_Sample_Count(uint32_t frequency, uint32_t num_cycles) {
+  const uint32_t SAMPLING_RATE = 2400000; // 2.4 MHz
+
+  // Calculate samples for exact number of cycles
+  // samples = (sampling_rate * num_cycles) / frequency
+  uint32_t total_samples = (SAMPLING_RATE * num_cycles) / frequency;
+
+  return total_samples;
+}
+
+static int measure_hv_vpp(uint32_t freq, uint32_t level, TickType_t stab_delay,
+                          bool print) {
+
+  uint32_t sample_count = Calculate_ADC_Sample_Count(freq, 20);
+
+  DAC_SetOutput_Percent(0);
+  vTaskDelay(100);
+
+  DDS_Start(freq, false);
+  DAC_SetOutput_Percent(level);
+
+  // stabilize
+  vTaskDelay(stab_delay);
+
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_dma_buf, sample_count);
+  while (HAL_DMA_GetState(hadc1.DMA_Handle) != HAL_DMA_STATE_READY)
+    ;
+  HAL_ADC_Stop_DMA(&hadc1);
+
+  int adc_sum = 0;
+  for (int i = 0; i < sample_count; i++) {
+    adc_sum += adc_dma_buf[i];
+  }
+
+  float adc_avg = ((float)adc_sum) / sample_count;
+
+  float sum_of_squares = 0;
+  for (int i = 0; i < sample_count; i++) {
+    float amp = (float)adc_dma_buf[i] - adc_avg;
+    sum_of_squares += amp * amp;
+  }
+
+  float rms_adc = sqrtf(sum_of_squares / sample_count);
+  float Vmid = (adc_avg / 4095.0) * 3.3;
+  float Vrms = (rms_adc / 4095.0) * 3.3;
+  float Vpp = Vrms * 2.0 * sqrtf(2.0);
+
+  int hv_vpp = (int)(Vpp * 40 * 1000);
+
+  if (print) {
+    printf("measure_hv_vpp: freq: %lu, sample_count: %lu, Vmid: %d mV, Vrms: "
+           "%d mV, Vpp: %d mV, hv_vpp: %d mV\r\n",
+           freq, sample_count, (int)(Vmid * 1000), (int)(Vrms * 1000),
+           (int)(Vpp * 1000), hv_vpp);
+  }
+
+  return hv_vpp;
+}
+#endif
