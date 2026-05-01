@@ -147,7 +147,7 @@ extern const char *bit_rep[16];
 
 void do_profile(int index) {
   if (index < 0 || index > LAST_PROFILE_INDEX) {
-    printf("error: do_profile, index %d out of range\r\n", index);
+    printf("error: index %d out of range\r\n", index);
     return;
   }
 

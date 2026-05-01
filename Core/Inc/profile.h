@@ -34,6 +34,20 @@
 #define LAST_PROFILE_INDEX (NEXT_PROFILE_INDEX)      // 19
 #define NUM_OF_ALL_PROFILES (LAST_PROFILE_INDEX + 1) // 20
 
+/**
+ * ad9834的输出频率范围
+ */
+#define DDS_MIN_FREQ 5000
+#define DDS_MAX_FREQ 500000
+
+/**
+ * 新的pad配置每组只有4个Pad，共4组，所以一个32bit整数即可
+ * 表示配置；
+ *
+ * word方便内部使用；
+ * a1/2/3/4-d1/2/3/4方便赋值取值，
+ * xbuf用于uart传输；
+ */
 typedef union {
   uint32_t word;
   struct __attribute__((packed)) {
@@ -59,6 +73,10 @@ typedef union {
 
 _Static_assert(sizeof(allpads_v2_t) == 4, "allpads_v2_t size not 4");
 
+/**
+ * 实验设计为两个phase来回切换
+ * 每个phase有独立的频率，时间，电压
+ */
 typedef struct {
   allpads_v2_t pads;
   uint32_t freq; // frequency 5000 to 500,000
@@ -67,9 +85,6 @@ typedef struct {
 } phase_v2_t;
 
 _Static_assert(sizeof(phase_v2_t) == 16, "phase_v2_t size not 20");
-
-#define DDS_MAX_FREQ 500000
-#define DDS_MIN_FREQ 5000
 
 typedef union {
   uint32_t word[sizeof(phase_v2_t) * 2 / sizeof(uint32_t)];
@@ -81,10 +96,22 @@ typedef union {
 
 _Static_assert(sizeof(profile_v2_t) == 32, "profile_v2_t size not 32");
 
+/**
+ * 打印一个profile，可以是内部profile
+ */
 void print_profile(int index);
 
+/**
+ * 发送一个请求；在profile任务的主循环里会读取该请求；
+ * 该函数在command任务种被调用，因为按键处理也在这个任务中；
+ *
+ * TODO 可以考虑修改名称
+ */
 void do_profile(int index);
 
+/**
+ * 在define命令中设置profile
+ */
 void set_profile_phase(int profile_index, int phase_index,
                        const phase_v2_t *phase);
 

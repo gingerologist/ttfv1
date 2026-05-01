@@ -431,64 +431,6 @@ CliCommandBinding cli_cmd_ll_binding = {
     "ll", "Print internal profiles (for testing purposes only)", false, NULL,
     CLI_CMD_LL};
 
-/**
- * this function set only a group (4 pads)
- * the first argument must be a, b, c, or d
- */
-static void CLI_CMD_TGroup(EmbeddedCli *cli, char *args, void *context) {
-  static phase_v2_t phase = {.freq = 200000, .duration = 3600, .level = 10};
-  const char *p;
-  char padstr[20] = "0000,0000,0000,0000";
-  int pos;
-
-  uint16_t count = embeddedCliGetTokenCount(args);
-
-  if (count != 2) {
-    printf("error: tg command requires exact 2 arguments.\r\n");
-    return;
-  }
-
-  p = embeddedCliGetToken(args, 1);
-  if (strlen(p) != 1 || *p < 'a' || *p > 'd') {
-    printf("error: the first argument must be a, b, c, or d\r\n");
-    return;
-  }
-
-  // pos means group a (0), b (1), c (2), or d (3)
-  pos = *p - 'a';
-
-  p = embeddedCliGetToken(args, 2);
-  if (strlen(p) != 4) {
-    printf("error: the 2nd argument must contain exact 4 symbols.\r\n");
-    return;
-  }
-
-  for (int i = 0; i < 4; i++) {
-    if (p[i] != '0' && p[i] != '1' && p[i] != '2') {
-      printf("error: all symbols in the 2nd argument must be 0, 1 or 2.\r\n");
-      return;
-    }
-
-    padstr[pos * 6 + i] = p[i];
-  }
-
-  printf("padstr: %s\r\n", padstr);
-
-  if (!parse_phase_padscfg_v2(padstr, &phase.pads)) {
-    printf("error: unexpected error.\r\n");
-    return;
-  }
-
-  set_profile_phase(DDBF_PROFILE_INDEX, 0, &phase);
-  set_profile_phase(DDBF_PROFILE_INDEX, 1, &zero_phase);
-
-  do_profile(DDBF_PROFILE_INDEX);
-}
-
-CliCommandBinding cli_cmd_tg_binding = {
-    "tg", "Direct config a single group of pads, for testing purposes only.",
-    true, NULL, CLI_CMD_TGroup};
-
 extern UART_HandleTypeDef huart6;
 
 static void CLI_CMD_FF(EmbeddedCli *cli, char *args, void *context) {
