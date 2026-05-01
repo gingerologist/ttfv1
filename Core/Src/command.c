@@ -15,7 +15,7 @@
 #include "queue.h"
 
 #include "cmsis_os.h"
-#include "command.h"
+// #include "command.h"
 #include "main.h"
 #include "profile.h"
 // #include "tca9555.h"
