@@ -165,7 +165,6 @@ void StartProfileTask(void const *argument) {
 #else
   DAC_Start();
   DAC_SetOutput_Percent(0);
-  vTaskDelay(portMAX_DELAY);
 #endif
 
 entry_point:
